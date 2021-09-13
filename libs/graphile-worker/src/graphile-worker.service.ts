@@ -12,25 +12,16 @@ export class GraphileWorkerService {
   private readonly logger = new Logger(GraphileWorkerService.name);
   private isMigrationDone: boolean;
 
-  constructor(private readonly connectionString: string) {}
+  constructor(private readonly options: WorkerUtilsOptions) {}
 
   async quickAddJob(
-    options: WorkerUtilsOptions,
     identifier: string,
     payload?: unknown,
     spec?: TaskSpec,
   ): Promise<Job> {
     await this.runMigrations();
 
-    const job = await quickAddJob(
-      {
-        connectionString: this.connectionString,
-        ...options,
-      },
-      identifier,
-      payload,
-      spec,
-    );
+    const job = await quickAddJob(this.options, identifier, payload, spec);
 
     this.logger.debug(`quickAddJob add job #${job.id}`);
 
@@ -42,7 +33,7 @@ export class GraphileWorkerService {
       return;
     }
 
-    await runMigrations({ connectionString: this.connectionString });
+    await runMigrations(this.options);
     this.logger.debug('Run migrations');
     this.isMigrationDone = true;
   }

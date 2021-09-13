@@ -4,9 +4,9 @@ import { AppController } from './app.controller';
 
 @Module({
   imports: [
-    GraphileWorkerModule.forRoot(
-      'postgres://example:password@postgres/example',
-    ),
+    GraphileWorkerModule.forRoot({
+      connectionString: 'postgres://example:password@postgres/example',
+    }),
   ],
   controllers: [AppController],
   providers: [],

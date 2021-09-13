@@ -8,6 +8,6 @@ export class AppController {
   @Post()
   @HttpCode(201)
   async addJob() {
-    await this.graphileWorker.quickAddJob({}, 'test', { hello: 'world' });
+    await this.graphileWorker.quickAddJob('test', { hello: 'world' });
   }
 }
