@@ -1,4 +1,18 @@
 {
   "collection": "@nestjs/schematics",
-  "sourceRoot": "src"
+  "sourceRoot": "src",
+  "projects": {
+    "graphile-worker": {
+      "type": "library",
+      "root": "libs/graphile-worker",
+      "entryFile": "index",
+      "sourceRoot": "libs/graphile-worker/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/graphile-worker/tsconfig.lib.json"
+      }
+    }
+  },
+  "compilerOptions": {
+    "webpack": true
+  }
 }

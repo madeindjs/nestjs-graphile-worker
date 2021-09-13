@@ -1,10 +1,14 @@
+import { GraphileWorkerModule } from '@app/graphile-worker';
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
 
 @Module({
-  imports: [],
+  imports: [
+    GraphileWorkerModule.forRoot(
+      'postgres://example:password@postgres/example',
+    ),
+  ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [],
 })
 export class AppModule {}

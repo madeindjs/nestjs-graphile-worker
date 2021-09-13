@@ -1,12 +1,13 @@
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { GraphileWorkerService } from '@app/graphile-worker';
+import { Controller, HttpCode, Post } from '@nestjs/common';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(private readonly graphileWorker: GraphileWorkerService) {}
 
-  @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  @Post()
+  @HttpCode(201)
+  async addJob() {
+    await this.graphileWorker.quickAddJob({}, 'test', { hello: 'world' });
   }
 }
