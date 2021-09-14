@@ -2,7 +2,7 @@
   "compilerOptions": {
     "module": "commonjs",
     "declaration": true,
-    "removeComments": true,
+    "removeComments": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
@@ -12,13 +12,8 @@
     "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
-    "paths": {
-      "@app/graphile-worker": [
-        "libs/graphile-worker/src"
-      ],
-      "@app/graphile-worker/*": [
-        "libs/graphile-worker/src/*"
-      ]
-    }
-  }
+  },
+  "exclude": [
+    "sample"
+  ]
 }

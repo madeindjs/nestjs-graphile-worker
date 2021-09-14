@@ -1,0 +1,24 @@
+# source
+e2e/
+lib/
+.idea/
+coverage/
+
+# config
+tsconfig.json
+tslint.json
+.prettierignore
+.prettierrc
+.travis.yml
+docker-compose.yml
+jest.config.js
+jest-e2e.config.js
+renovate.json
+
+# misc
+sample/
+
+.circleci/
+.github/
+FUNDING.yml
+docker-compose.yml
