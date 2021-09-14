@@ -3,10 +3,10 @@ import {
   Job,
   makeWorkerUtils,
   run,
-  runMigrations,
   RunnerOptions,
   runOnce,
   TaskSpec,
+  WorkerUtils,
 } from 'graphile-worker';
 
 @Injectable()
@@ -41,6 +41,10 @@ export class GraphileWorkerService {
     await runOnce(this.options);
   }
 
+  getWorkerUtils(): Promise<WorkerUtils> {
+    return makeWorkerUtils(this.options);
+  }
+
   async addJob(
     identifier: string,
     payload?: unknown,
@@ -53,7 +57,7 @@ export class GraphileWorkerService {
   async addJobs(
     jobs: Array<{ identifier: string; payload?: unknown; spec?: TaskSpec }>,
   ): Promise<Job[]> {
-    const workerUtils = await makeWorkerUtils(this.options);
+    const workerUtils = await this.getWorkerUtils();
     const createdJobs: Job[] = [];
 
     try {
@@ -74,7 +78,6 @@ export class GraphileWorkerService {
       return;
     }
 
-    await runMigrations(this.options);
     this.logger.debug('Run migrations');
     this.isMigrationDone = true;
   }
