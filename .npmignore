@@ -14,11 +14,10 @@ docker-compose.yml
 jest.config.js
 jest-e2e.config.js
 renovate.json
-sample.tsconfig.json
-cc-test-reporter
 
 # misc
-example/
+sample/
+
 .circleci/
 .github/
 FUNDING.yml

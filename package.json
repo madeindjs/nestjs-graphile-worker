@@ -1,6 +1,6 @@
 {
   "name": "nestjs-graphile-worker",
-  "version": "0.0.1-alpha",
+  "version": "0.0.2-alpha",
   "description": "A Nest.js wrapper for Graphile Worker",
   "author": "Alexandre Rousseau <alexandre@rsseau.fr>",
   "private": false,
@@ -13,6 +13,8 @@
     "type": "git",
     "url": "git+https://github.com/madeindjs/nestjs-graphile-worker.git"
   },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "nest build",
