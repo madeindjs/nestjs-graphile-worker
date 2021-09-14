@@ -1,10 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
   Job,
-  quickAddJob,
+  makeWorkerUtils,
   run,
   runMigrations,
   RunnerOptions,
+  runOnce,
   TaskSpec,
 } from 'graphile-worker';
 
@@ -16,9 +17,11 @@ export class GraphileWorkerService {
   constructor(private readonly options: RunnerOptions) {}
 
   /**
-   * Run a new worker
+   * Runs until either stopped by a signal event like `SIGINT` or by calling the `stop()` method on the resolved object.
+   *
+   * The resolved `Runner` object has a number of helpers on it, see [Runner object](https://github.com/graphile/worker#runner-object) for more information.
    */
-  async run() {
+  async run(): Promise<void> {
     await this.runMigrations();
 
     this.logger.debug('Start runner');
@@ -27,18 +30,43 @@ export class GraphileWorkerService {
     return runner.promise;
   }
 
-  async quickAddJob(
+  /**
+   * Runs until there are no runnable jobs left, and then resolve.
+   */
+  async runOnce(): Promise<void> {
+    await this.runMigrations();
+
+    this.logger.debug('Start runner');
+
+    await runOnce(this.options);
+  }
+
+  async addJob(
     identifier: string,
     payload?: unknown,
     spec?: TaskSpec,
   ): Promise<Job> {
-    await this.runMigrations();
-
-    const job = await quickAddJob(this.options, identifier, payload, spec);
-
-    this.logger.debug(`quickAddJob add job #${job.id}`);
-
+    const [job] = await this.addJobs([{ identifier, payload, spec }]);
     return job;
+  }
+
+  async addJobs(
+    jobs: Array<{ identifier: string; payload?: unknown; spec?: TaskSpec }>,
+  ): Promise<Job[]> {
+    const workerUtils = await makeWorkerUtils(this.options);
+    const createdJobs: Job[] = [];
+
+    try {
+      await workerUtils.migrate();
+
+      for (const { identifier, payload, spec } of jobs) {
+        const job = await workerUtils.addJob(identifier, payload, spec);
+        createdJobs.push(job);
+      }
+      return createdJobs;
+    } finally {
+      await workerUtils.release();
+    }
   }
 
   private async runMigrations() {
