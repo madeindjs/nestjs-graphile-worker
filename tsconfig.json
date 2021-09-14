@@ -11,14 +11,6 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "incremental": true,
-    "skipLibCheck": true,
-    "paths": {
-      "@app/graphile-worker": [
-        "libs/graphile-worker/src"
-      ],
-      "@app/graphile-worker/*": [
-        "libs/graphile-worker/src/*"
-      ]
-    }
+    "skipLibCheck": true
   }
 }
