@@ -12,16 +12,6 @@ export interface GraphileWorkerConfigurationFactory {
 export interface GraphileWorkerAsyncConfiguration
   extends Pick<ModuleMetadata, 'imports'> {
   /**
-   * Existing Provider to be used.
-   */
-  // useExisting?: Type<GraphileWorkerConfigurationFactory>;
-
-  /**
-   * Type (class name) of provider (instance to be registered and injected).
-   */
-  // useClass?: Type<GraphileWorkerConfigurationFactory>;
-
-  /**
    * Factory function that returns an instance of the provider to be injected.
    */
   useFactory?: (

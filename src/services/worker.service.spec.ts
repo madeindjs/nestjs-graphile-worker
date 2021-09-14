@@ -3,16 +3,16 @@ import {
   ConfigurationService,
   CONFIGURATION_SERVICE_KEY,
 } from './configuration.service';
-import { GraphileWorkerService } from './graphile-worker.service';
 import { ListenerExplorerService } from './listener-explorer.service';
+import { WorkerService } from './worker.service';
 
-describe(GraphileWorkerService.name, () => {
-  let service: GraphileWorkerService;
+describe(WorkerService.name, () => {
+  let service: WorkerService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        GraphileWorkerService,
+        WorkerService,
         {
           provide: ListenerExplorerService,
           useValue: {
@@ -32,7 +32,7 @@ describe(GraphileWorkerService.name, () => {
       ],
     }).compile();
 
-    service = module.get<GraphileWorkerService>(GraphileWorkerService);
+    service = module.get<WorkerService>(WorkerService);
   });
 
   it('should be defined', () => {

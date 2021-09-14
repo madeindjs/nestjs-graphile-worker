@@ -15,7 +15,7 @@ Why you should prefer Graphile Worker instead of [Bull](https://github.com/nestj
 ## Features
 
 - use a `GraphileWorkerModule` to register Graphile Worker with a `asRootAsync` to pass dynamic parameters
-- provide a `GraphileWorkerService` to add jobs or start runner
+- provide a `WorkerService` to add jobs or start runner
 - provide a `OnWorkerEvenet` decorator to add custom behavior on `job:success` for example
 
 ## Installation
@@ -82,15 +82,15 @@ export class AppModule {}
 
 ## Create jobs
 
-You may use `GraphileWorkerService`:
+You may use `WorkerService`:
 
 ```ts
-import { GraphileWorkerService } from '@app/graphile-worker';
+import { WorkerService } from '@app/graphile-worker';
 import { Controller, HttpCode, Post } from '@nestjs/common';
 
 @Controller()
 export class AppController {
-  constructor(private readonly graphileWorker: GraphileWorkerService) {}
+  constructor(private readonly graphileWorker: WorkerService) {}
 
   @Post()
   @HttpCode(201)
@@ -114,16 +114,16 @@ export class AppController {
 
 ## Start runner
 
-Add `GraphileWorkerService.run` in `main.ts` file:
+Add `WorkerService.run` in `main.ts` file:
 
 ```ts
-import { GraphileWorkerService } from '@app/graphile-worker';
+import { WorkerService } from '@app/graphile-worker';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.get(GraphileWorkerService).run();
+  app.get(WorkerService).run();
   await app.listen(3000);
 }
 bootstrap();
@@ -169,12 +169,6 @@ $ npm run test:cov
 ## Support
 
 Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
 
 ## License
 

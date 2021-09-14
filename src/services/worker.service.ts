@@ -15,8 +15,8 @@ import {
 import { ListenerExplorerService } from './listener-explorer.service';
 
 @Injectable()
-export class GraphileWorkerService {
-  private readonly logger = new Logger(GraphileWorkerService.name);
+export class WorkerService {
+  private readonly logger = new Logger(WorkerService.name);
   private isMigrationDone: boolean;
   private readonly options: RunnerOptions;
 

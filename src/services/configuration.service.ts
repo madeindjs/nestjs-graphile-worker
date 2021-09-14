@@ -11,5 +11,4 @@ export class ConfigurationService {
   }
 }
 
-// TODO: try to remove this ?
 export const CONFIGURATION_SERVICE_KEY = Symbol.for(ConfigurationService.name);

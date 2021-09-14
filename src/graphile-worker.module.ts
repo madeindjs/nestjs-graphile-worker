@@ -4,32 +4,32 @@ import {
   GraphileWorkerAsyncConfiguration,
   GraphileWorkerConfigurationFactory,
   RunnerOptionWithoutEvents,
-} from './interfaces/config.interface';
+} from './interfaces/module-config.interfaces';
 import {
   ConfigurationService,
   CONFIGURATION_SERVICE_KEY,
 } from './services/configuration.service';
-import { GraphileWorkerService } from './services/graphile-worker.service';
 import { ListenerExplorerService } from './services/listener-explorer.service';
 import { MetadataAccessorService } from './services/metadata-accessor.service';
+import { WorkerService } from './services/worker.service';
 
 export const GRAPHILE_WORKER_TOKEN = Symbol.for('NestJsGraphileWorker');
 
 const internalsProviders = [
   MetadataAccessorService,
   ListenerExplorerService,
-  GraphileWorkerService,
+  WorkerService,
 ];
 
 const internalsModules = [DiscoveryModule];
 
 @Module({
-  providers: [GraphileWorkerService],
-  exports: [GraphileWorkerService],
+  providers: [WorkerService],
+  exports: [WorkerService],
 })
 export class GraphileWorkerModule {
   /**
-   * Registers a globally available `GraphileWorkerService`.
+   * Registers a globally available `WorkerService`.
    *
    * Example:
    *
@@ -55,12 +55,12 @@ export class GraphileWorkerModule {
       imports: internalsModules,
       module: GraphileWorkerModule,
       providers: [graphileConfigurationServiceProvider, ...internalsProviders],
-      exports: [GraphileWorkerService],
+      exports: [WorkerService],
     };
   }
 
   /**
-   * Registers a globally available `GraphileWorkerService`.
+   * Registers a globally available `WorkerService`.
    *
    * Example:
    *
