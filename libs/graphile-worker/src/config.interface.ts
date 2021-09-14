@@ -1,12 +1,12 @@
 import { FactoryProvider, ModuleMetadata } from '@nestjs/common';
 import { RunnerOptions } from 'graphile-worker';
 
-export type GraphileWorkerConfiguration = RunnerOptions;
+export type RunnerOptionWithoutEvents = Omit<RunnerOptions, 'events'>;
 
 export interface GraphileWorkerConfigurationFactory {
   createSharedConfiguration():
-    | Promise<GraphileWorkerConfiguration>
-    | GraphileWorkerConfiguration;
+    | Promise<RunnerOptionWithoutEvents>
+    | RunnerOptionWithoutEvents;
 }
 
 export interface GraphileWorkerAsyncConfiguration
@@ -26,7 +26,7 @@ export interface GraphileWorkerAsyncConfiguration
    */
   useFactory?: (
     ...args: any[]
-  ) => Promise<GraphileWorkerConfiguration> | GraphileWorkerConfiguration;
+  ) => Promise<RunnerOptionWithoutEvents> | RunnerOptionWithoutEvents;
 
   /**
    * Optional list of providers to be injected into the context of the Factory function.

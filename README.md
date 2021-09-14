@@ -10,6 +10,12 @@ Why you should prefer Graphile Worker instead of [Bull](https://github.com/nestj
 
 1. You already have a PostgreSQL in your stack (and you don't want to add a Redis server)
 
+## Features
+
+- use a `GraphileWorkerModule` to register Graphile Worker with a `asRootAsync` to pass dynamic parameters
+- provide a `GraphileWorkerService` to add jobs or start runner
+- provide a `OnWorkerEvenet` decorator to add custom behavior on `job:success` for example
+
 ## Installation
 
 ```bash
@@ -120,6 +126,30 @@ async function bootstrap() {
 }
 bootstrap();
 ```
+
+## `OnWorkerEvent` decorator
+
+You need to add `@GraphileWorkerListener` decorator on your class and then set `@OnWorkerEvent(eventName)` on method:
+
+```ts
+import { GraphileWorkerListener, OnWorkerEvent } from '@app/graphile-worker';
+import { Injectable, Logger } from '@nestjs/common';
+import { WorkerEventMap } from 'graphile-worker';
+
+@Injectable()
+@GraphileWorkerListener()
+export class AppService {
+  private readonly logger = new Logger(AppService.name);
+
+  @OnWorkerEvent('job:success')
+  onJobSuccess({ job }: WorkerEventMap['job:success']) {
+    this.logger.debug(`job #${job.id} finished`);
+    // output: [Nest] 1732  - 09/14/2021, 12:42:45 PM   DEBUG [AppService] job #349 finished
+  }
+}
+```
+
+You can find a complete list of available event on [Graphile Worker's documentation](https://github.com/graphile/worker#workerevents).
 
 ## Test
 

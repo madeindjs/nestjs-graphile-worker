@@ -1,12 +1,27 @@
 import { DynamicModule, Module, Provider } from '@nestjs/common';
+import { DiscoveryModule } from '@nestjs/core';
 import {
   GraphileWorkerAsyncConfiguration,
-  GraphileWorkerConfiguration,
   GraphileWorkerConfigurationFactory,
+  RunnerOptionWithoutEvents,
 } from './config.interface';
+import {
+  ConfigurationService,
+  CONFIGURATION_SERVICE_KEY,
+} from './configuration.service';
 import { GraphileWorkerService } from './graphile-worker.service';
+import { ListenerExplorerService } from './listener-explorer.service';
+import { MetadataAccessorService } from './metadata-accessor.service';
 
 export const GRAPHILE_WORKER_TOKEN = Symbol.for('NestJsGraphileWorker');
+
+const internalsProviders = [
+  MetadataAccessorService,
+  ListenerExplorerService,
+  GraphileWorkerService,
+];
+
+const internalsModules = [DiscoveryModule];
 
 @Module({
   providers: [GraphileWorkerService],
@@ -27,17 +42,20 @@ export class GraphileWorkerModule {
    *  }),
    * ```
    */
-  static forRoot(config: GraphileWorkerConfiguration): DynamicModule {
-    const graphileWorkerService: Provider = {
-      provide: GraphileWorkerService,
-      useValue: new GraphileWorkerService(config),
+  static forRoot(config: RunnerOptionWithoutEvents): DynamicModule {
+    const configurationService = new ConfigurationService(config);
+
+    const graphileConfigurationServiceProvider: Provider = {
+      provide: CONFIGURATION_SERVICE_KEY,
+      useValue: configurationService,
     };
 
     return {
       global: true,
+      imports: internalsModules,
       module: GraphileWorkerModule,
-      providers: [graphileWorkerService],
-      exports: [graphileWorkerService],
+      providers: [graphileConfigurationServiceProvider, ...internalsProviders],
+      exports: [GraphileWorkerService],
     };
   }
 
@@ -67,8 +85,8 @@ export class GraphileWorkerModule {
     return {
       global: true,
       module: GraphileWorkerModule,
-      imports: asyncConfig.imports,
-      providers,
+      imports: [...asyncConfig.imports, ...internalsModules],
+      providers: [...providers, ...internalsProviders],
       exports: providers,
     };
   }
@@ -84,23 +102,22 @@ export class GraphileWorkerModule {
   ): Provider {
     if (options.useFactory) {
       return {
-        provide: GraphileWorkerService,
+        provide: CONFIGURATION_SERVICE_KEY,
         useFactory: async (...args: any[]) => {
-          const configuration = await options.useFactory(...args);
-          return new GraphileWorkerService(configuration);
+          const config = await options.useFactory(...args);
+          return new ConfigurationService(config);
         },
         inject: options.inject || [],
       };
     }
 
     return {
-      provide: GraphileWorkerService,
+      provide: CONFIGURATION_SERVICE_KEY,
       useFactory: async (
         optionsFactory: GraphileWorkerConfigurationFactory,
       ) => {
-        const configuration = await optionsFactory.createSharedConfiguration();
-
-        return new GraphileWorkerService(configuration);
+        const config = await optionsFactory.createSharedConfiguration();
+        return new ConfigurationService(config);
       },
       inject: options.inject,
     };
