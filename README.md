@@ -16,7 +16,11 @@ Why you should prefer Graphile Worker instead of [Bull](https://github.com/nestj
 $ npm install nest-graphile-worker
 ```
 
-Then import module
+## Usage
+
+### Import module
+
+You can use `GraphileWorkerModule.forRoot`:
 
 ```ts
 // src/app.module.ts
@@ -28,6 +32,9 @@ import { AppController } from './app.controller';
   imports: [
     GraphileWorkerModule.forRoot({
       connectionString: 'postgres://example:password@postgres/example',
+      taskList: {
+        hello: helloTask,
+      },
     }),
   ],
   controllers: [AppController],
@@ -36,10 +43,41 @@ import { AppController } from './app.controller';
 export class AppModule {}
 ```
 
-Now you can add jobs using `GraphileWorkerService`
+Or you can use `GraphileWorkerModule.forRootAsync`:
 
 ```ts
-import { GraphileWorkerService } from 'graphile-worker';
+import { GraphileWorkerModule } from '@app/graphile-worker';
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { AppController } from './app.controller';
+import { helloTask } from './hello.task';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot(),
+    GraphileWorkerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        connectionString: config.get('PG_CONNECTION'),
+        taskList: {
+          hello: helloTask,
+        },
+      }),
+    }),
+  ],
+  controllers: [AppController],
+  providers: [],
+})
+export class AppModule {}
+```
+
+## Create jobs
+
+You may use `GraphileWorkerService`:
+
+```ts
+import { GraphileWorkerService } from '@app/graphile-worker';
 import { Controller, HttpCode, Post } from '@nestjs/common';
 
 @Controller()
@@ -49,12 +87,26 @@ export class AppController {
   @Post()
   @HttpCode(201)
   async addJob() {
-    await this.graphileWorker.quickAddJob('test', { hello: 'world' });
+    await this.graphileWorker.addJob('hello', { hello: 'world' });
+  }
+
+  @Post('bulk')
+  @HttpCode(201)
+  async addJobs() {
+    const jobs: Array<{ identifier: string; payload?: unknown }> = new Array(
+      100,
+    )
+      .fill(undefined)
+      .map((_, i) => ({ identifier: 'hello', payload: { hello: i } }));
+
+    return this.graphileWorker.addJobs(jobs);
   }
 }
 ```
 
-Also you can run worker in bacground in `main.ts` file:
+## Start runner
+
+Add `GraphileWorkerService.run` in `main.ts` file:
 
 ```ts
 import { GraphileWorkerService } from '@app/graphile-worker';
