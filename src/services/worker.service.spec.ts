@@ -1,8 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  ConfigurationService,
-  CONFIGURATION_SERVICE_KEY,
-} from './configuration.service';
+import { RunnerOptions } from 'graphile-worker';
+import { RUNNER_OPTIONS_KEY } from '../interfaces/module-config.interfaces';
 import { ListenerExplorerService } from './listener-explorer.service';
 import { WorkerService } from './worker.service';
 
@@ -20,14 +18,11 @@ describe(WorkerService.name, () => {
           },
         },
         {
-          useFactory: () => {
-            const configurationService = new ConfigurationService({
-              taskList: { hello: () => {} },
-              connectionString: 'postgres://example:password@postgres/example',
-            });
-            return configurationService;
-          },
-          provide: CONFIGURATION_SERVICE_KEY,
+          provide: RUNNER_OPTIONS_KEY,
+          useValue: {
+            taskList: { hello: () => {} },
+            connectionString: 'postgres://example:password@postgres/example',
+          } as RunnerOptions,
         },
       ],
     }).compile();

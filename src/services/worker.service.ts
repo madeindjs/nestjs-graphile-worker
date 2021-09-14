@@ -8,30 +8,20 @@ import {
   TaskSpec,
   WorkerUtils,
 } from 'graphile-worker';
-import {
-  ConfigurationService,
-  CONFIGURATION_SERVICE_KEY,
-} from './configuration.service';
+import { RUNNER_OPTIONS_KEY } from '../interfaces/module-config.interfaces';
+import { uniq } from '../utils/array.utils';
 import { ListenerExplorerService } from './listener-explorer.service';
 
 @Injectable()
 export class WorkerService {
   private readonly logger = new Logger(WorkerService.name);
   private isMigrationDone: boolean;
-  private readonly options: RunnerOptions;
 
   constructor(
-    @Inject(CONFIGURATION_SERVICE_KEY)
-    configuration: ConfigurationService,
+    @Inject(RUNNER_OPTIONS_KEY) private readonly options: RunnerOptions,
     private readonly explorerService: ListenerExplorerService,
   ) {
-    configuration.config.events.on('job:success', (...args: any[]) => {
-      this.explorerService.listeners
-        .filter(({ event }) => event === 'job:success')
-        .forEach(({ callback }) => callback(...args));
-    });
-
-    this.options = configuration.config;
+    this.hookEvents();
   }
 
   /**
@@ -98,5 +88,17 @@ export class WorkerService {
 
     this.logger.debug('Run migrations');
     this.isMigrationDone = true;
+  }
+
+  private hookEvents() {
+    const events = this.explorerService.listeners.map(({ event }) => event);
+
+    for (const event of uniq(events)) {
+      this.options.events.on(event, (...args: any[]) => {
+        this.explorerService.listeners
+          .filter(({ event }) => event === event)
+          .forEach(({ callback }) => callback(...args));
+      });
+    }
   }
 }

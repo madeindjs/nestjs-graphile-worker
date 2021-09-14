@@ -1,14 +1,13 @@
 import { DynamicModule, Module, Provider } from '@nestjs/common';
 import { DiscoveryModule } from '@nestjs/core';
+import { EventEmitter } from 'events';
+import { RunnerOptions } from 'graphile-worker';
 import {
   GraphileWorkerAsyncConfiguration,
+  GraphileWorkerConfiguration,
   GraphileWorkerConfigurationFactory,
-  RunnerOptionWithoutEvents,
+  RUNNER_OPTIONS_KEY,
 } from './interfaces/module-config.interfaces';
-import {
-  ConfigurationService,
-  CONFIGURATION_SERVICE_KEY,
-} from './services/configuration.service';
 import { ListenerExplorerService } from './services/listener-explorer.service';
 import { MetadataAccessorService } from './services/metadata-accessor.service';
 import { WorkerService } from './services/worker.service';
@@ -42,12 +41,10 @@ export class GraphileWorkerModule {
    *  }),
    * ```
    */
-  static forRoot(config: RunnerOptionWithoutEvents): DynamicModule {
-    const configurationService = new ConfigurationService(config);
-
+  static forRoot(config: GraphileWorkerConfiguration): DynamicModule {
     const graphileConfigurationServiceProvider: Provider = {
-      provide: CONFIGURATION_SERVICE_KEY,
-      useValue: configurationService,
+      provide: RUNNER_OPTIONS_KEY,
+      useValue: config,
     };
 
     return {
@@ -102,24 +99,35 @@ export class GraphileWorkerModule {
   ): Provider {
     if (options.useFactory) {
       return {
-        provide: CONFIGURATION_SERVICE_KEY,
+        provide: RUNNER_OPTIONS_KEY,
+        inject: options.inject || [],
         useFactory: async (...args: any[]) => {
           const config = await options.useFactory(...args);
-          return new ConfigurationService(config);
+          return buildRunnerOptions(config);
         },
-        inject: options.inject || [],
       };
     }
 
     return {
-      provide: CONFIGURATION_SERVICE_KEY,
+      provide: RUNNER_OPTIONS_KEY,
+      inject: options.inject,
       useFactory: async (
         optionsFactory: GraphileWorkerConfigurationFactory,
       ) => {
         const config = await optionsFactory.createSharedConfiguration();
-        return new ConfigurationService(config);
+        return buildRunnerOptions(config);
       },
-      inject: options.inject,
     };
   }
+}
+
+function buildRunnerOptions(
+  configuration: GraphileWorkerConfiguration,
+): RunnerOptions {
+  const events = new EventEmitter();
+
+  return {
+    ...configuration,
+    events,
+  };
 }
