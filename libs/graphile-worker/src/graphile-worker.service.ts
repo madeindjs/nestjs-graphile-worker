@@ -2,9 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   Job,
   quickAddJob,
+  run,
   runMigrations,
+  RunnerOptions,
   TaskSpec,
-  WorkerUtilsOptions,
 } from 'graphile-worker';
 
 @Injectable()
@@ -12,7 +13,19 @@ export class GraphileWorkerService {
   private readonly logger = new Logger(GraphileWorkerService.name);
   private isMigrationDone: boolean;
 
-  constructor(private readonly options: WorkerUtilsOptions) {}
+  constructor(private readonly options: RunnerOptions) {}
+
+  /**
+   * Run a new worker
+   */
+  async run() {
+    await this.runMigrations();
+
+    this.logger.debug('Start runner');
+
+    const runner = await run(this.options);
+    return runner.promise;
+  }
 
   async quickAddJob(
     identifier: string,
