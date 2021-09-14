@@ -1,13 +1,11 @@
 import { SetMetadata } from '@nestjs/common';
-import { WorkerEventMap } from 'graphile-worker';
+import { WorkerEventName } from '../interfaces/worker.interfaces';
 
-export const GRAPHILE_WORKER_LISTENER = Symbol.for('GraphileWorkerListener');
+export const GRAPHILE_WORKER_LISTENER = Symbol.for('GRAPHILE_WORKER_LISTENER');
 
 export const GRAPHILE_WORKER_ON_WORKER_EVENT = Symbol.for(
-  'GraphileWorkerJobEvent',
+  'GRAPHILE_WORKER_ON_WORKER_EVENT',
 );
-
-export type WorkerEventName = keyof WorkerEventMap;
 
 export function GraphileWorkerListener(): ClassDecorator {
   return SetMetadata(GRAPHILE_WORKER_LISTENER, true);

@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { DiscoveryService } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { MetadataScanner } from '@nestjs/core/metadata-scanner';
-import { WorkerEventName } from '../decorators/worker-hooks.decorators';
+import { WorkerEventName } from '../interfaces/worker.interfaces';
 import { MetadataAccessorService } from './metadata-accessor.service';
 
 /**
