@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { DiscoveryModule, Reflector } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
-import { GraphileWorkerListener, OnWorkerEvent } from '.';
+import {
+  GraphileWorkerListener,
+  OnWorkerEvent,
+} from '../decorators/worker-hooks.decorators';
 import { MetadataAccessorService } from './metadata-accessor.service';
 
 @Injectable()

@@ -1,3 +1,3 @@
+export * from './decorators/worker-hooks.decorators';
 export * from './graphile-worker.module';
-export * from './graphile-worker.service';
-export * from './worker-hooks.decorators';
+export * from './services/graphile-worker.service';

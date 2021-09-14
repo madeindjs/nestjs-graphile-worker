@@ -2,8 +2,8 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { DiscoveryService } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { MetadataScanner } from '@nestjs/core/metadata-scanner';
+import { WorkerEventName } from '../decorators/worker-hooks.decorators';
 import { MetadataAccessorService } from './metadata-accessor.service';
-import { WorkerEventName } from './worker-hooks.decorators';
 
 /**
  * This service is responsible to scan all [Graphile worker decorators](./worker-hooks.decorators.ts) and register them.

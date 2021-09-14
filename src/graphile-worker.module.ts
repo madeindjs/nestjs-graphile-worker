@@ -4,14 +4,14 @@ import {
   GraphileWorkerAsyncConfiguration,
   GraphileWorkerConfigurationFactory,
   RunnerOptionWithoutEvents,
-} from './config.interface';
+} from './interfaces/config.interface';
 import {
   ConfigurationService,
   CONFIGURATION_SERVICE_KEY,
-} from './configuration.service';
-import { GraphileWorkerService } from './graphile-worker.service';
-import { ListenerExplorerService } from './listener-explorer.service';
-import { MetadataAccessorService } from './metadata-accessor.service';
+} from './services/configuration.service';
+import { GraphileWorkerService } from './services/graphile-worker.service';
+import { ListenerExplorerService } from './services/listener-explorer.service';
+import { MetadataAccessorService } from './services/metadata-accessor.service';
 
 export const GRAPHILE_WORKER_TOKEN = Symbol.for('NestJsGraphileWorker');
 
