@@ -4,7 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import {
   GraphileWorkerListener,
   OnWorkerEvent,
-} from '../decorators/worker-hooks.decorators';
+} from '../decorators/worker.decorators';
 import { MetadataAccessorService } from './metadata-accessor.service';
 
 @Injectable()

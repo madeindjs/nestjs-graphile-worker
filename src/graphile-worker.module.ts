@@ -10,6 +10,7 @@ import {
 } from './interfaces/module-config.interfaces';
 import { ListenerExplorerService } from './services/listener-explorer.service';
 import { MetadataAccessorService } from './services/metadata-accessor.service';
+import { TaskExplorerService } from './services/task-explorer.service';
 import { WorkerService } from './services/worker.service';
 
 export const GRAPHILE_WORKER_TOKEN = Symbol.for('NestJsGraphileWorker');
@@ -17,6 +18,7 @@ export const GRAPHILE_WORKER_TOKEN = Symbol.for('NestJsGraphileWorker');
 const internalsProviders = [
   MetadataAccessorService,
   ListenerExplorerService,
+  TaskExplorerService,
   WorkerService,
 ];
 

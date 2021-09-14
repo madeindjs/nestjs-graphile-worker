@@ -11,6 +11,7 @@ import {
 import { RUNNER_OPTIONS_KEY } from '../interfaces/module-config.interfaces';
 import { uniq } from '../utils/array.utils';
 import { ListenerExplorerService } from './listener-explorer.service';
+import { TaskExplorerService } from './task-explorer.service';
 
 @Injectable()
 export class WorkerService {
@@ -19,8 +20,10 @@ export class WorkerService {
 
   constructor(
     @Inject(RUNNER_OPTIONS_KEY) private readonly options: RunnerOptions,
-    private readonly explorerService: ListenerExplorerService,
+    private readonly listenerExplorerService: ListenerExplorerService,
+    private readonly taskExplorerService: TaskExplorerService,
   ) {
+    this.options.taskList = this.taskExplorerService.taskList;
     this.hookEvents();
   }
 
@@ -91,11 +94,13 @@ export class WorkerService {
   }
 
   private hookEvents() {
-    const events = this.explorerService.listeners.map(({ event }) => event);
+    const events = this.listenerExplorerService.listeners.map(
+      ({ event }) => event,
+    );
 
     for (const event of uniq(events)) {
       this.options.events.on(event, (...args: any[]) => {
-        this.explorerService.listeners
+        this.listenerExplorerService.listeners
           .filter(({ event }) => event === event)
           .forEach(({ callback }) => callback(...args));
       });

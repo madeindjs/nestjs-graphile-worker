@@ -2,20 +2,19 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { DiscoveryService } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { MetadataScanner } from '@nestjs/core/metadata-scanner';
-import { WorkerEventName } from '../interfaces/worker.interfaces';
+import { TaskList } from 'graphile-worker';
 import { MetadataAccessorService } from './metadata-accessor.service';
 
 /**
- * This service is responsible to scan all [Worker decorators](../decorators/worker.decorators.ts) and register them.
+ * This service is responsible to scan all [Task decorators](../decorators/task.decorators.ts) and register them.
  *
  * Heavily inspired from [`BullExplorer`](https://github.com/nestjs/bull/blob/c230eab1dc26fb743a3428e61043167866b1e377/lib/bull.explorer.ts)
  */
 @Injectable()
-export class ListenerExplorerService implements OnModuleInit {
-  private readonly logger = new Logger(ListenerExplorerService.name);
+export class TaskExplorerService implements OnModuleInit {
+  private readonly logger = new Logger(TaskExplorerService.name);
 
-  public readonly listeners: { event: WorkerEventName; callback: Function }[] =
-    [];
+  public readonly taskList: TaskList = {};
 
   constructor(
     private readonly discoveryService: DiscoveryService,
@@ -31,7 +30,7 @@ export class ListenerExplorerService implements OnModuleInit {
     const providers: InstanceWrapper[] = this.discoveryService
       .getProviders()
       .filter((wrapper: InstanceWrapper) =>
-        this.metadataAccessor.isListener(wrapper.metatype),
+        this.metadataAccessor.isTask(wrapper.metatype),
       );
 
     providers.forEach((wrapper: InstanceWrapper) => {
@@ -41,18 +40,15 @@ export class ListenerExplorerService implements OnModuleInit {
         instance,
         Object.getPrototypeOf(instance),
         (key: string) => {
-          if (this.metadataAccessor.isWorkerEvent(instance[key])) {
-            const event = this.metadataAccessor.getListenerMetadata(
-              instance[key],
+          if (this.metadataAccessor.isTaskHandler(instance[key])) {
+            const name = this.metadataAccessor.getTaskMetadata(
+              wrapper.metatype,
             );
 
-            this.listeners.push({
-              event,
-              callback: (...args) => instance[key](...args),
-            });
+            this.taskList[name] = (...args) => instance[key](...args);
 
             this.logger.debug(
-              `Register ${event} from ${
+              `Register ${name} from ${
                 (instance as Object).constructor.name
               }.${key}`,
             );
