@@ -12,8 +12,5 @@
     "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
-  },
-  "exclude": [
-    "sample"
-  ]
+  }
 }

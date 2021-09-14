@@ -16,7 +16,8 @@ Why you should prefer Graphile Worker instead of [Bull](https://github.com/nestj
 
 - use a `GraphileWorkerModule` to register Graphile Worker with a `asRootAsync` to pass dynamic parameters
 - provide a `WorkerService` to add jobs or start runner
-- provide a `OnWorkerEvenet` decorator to add custom behavior on `job:success` for example
+- provide a `@OnWorkerEvent` decorator to add custom behavior on `job:success` for example
+- provide a `@Task(name)` decorator to define your injectable tasks
 
 ## Installation
 
@@ -79,6 +80,10 @@ import { helloTask } from './hello.task';
 })
 export class AppModule {}
 ```
+
+## Create task
+
+TODO
 
 ## Create jobs
 
@@ -168,4 +173,8 @@ $ npm run test:cov
 
 # Sample
 
-You can find a [sample](./sample/README.md) who use library.
+You can find a [sample](./sample/) who use library. To run it, simply `npm install` and then:
+
+```sh
+docker-compose up
+```

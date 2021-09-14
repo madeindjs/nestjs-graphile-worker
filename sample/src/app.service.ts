@@ -1,6 +1,6 @@
-import { GraphileWorkerListener, OnWorkerEvent } from '@app/graphile-worker';
 import { Injectable, Logger } from '@nestjs/common';
 import { WorkerEventMap } from 'graphile-worker';
+import { GraphileWorkerListener, OnWorkerEvent } from '../../src/index';
 
 @Injectable()
 @GraphileWorkerListener()

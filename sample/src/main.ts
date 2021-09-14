@@ -1,5 +1,5 @@
-import { WorkerService } from '@app/graphile-worker';
 import { NestFactory } from '@nestjs/core';
+import { WorkerService } from '../../src/index';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
