@@ -15,6 +15,17 @@ export const GRAPHILE_WORKER_TOKEN = Symbol.for('NestJsGraphileWorker');
 export class GraphileWorkerModule {
   /**
    * Registers a globally available `GraphileWorkerService`.
+   *
+   * Example:
+   *
+   * ```ts
+   *  GraphileWorkerModule.forRoot({
+   *   connectionString: 'postgres://example:password@postgres/example',
+   *   taskList: {
+   *     hello: helloTask,
+   *   },
+   *  }),
+   * ```
    */
   static forRoot(config: GraphileWorkerConfiguration): DynamicModule {
     const graphileWorkerService: Provider = {
@@ -30,6 +41,24 @@ export class GraphileWorkerModule {
     };
   }
 
+  /**
+   * Registers a globally available `GraphileWorkerService`.
+   *
+   * Example:
+   *
+   * ```ts
+   * GraphileWorkerModule.forRootAsync({
+   *   imports: [ConfigModule],
+   *   inject: [ConfigService],
+   *   useFactory: (config: ConfigService) => ({
+   *     connectionString: config.get('PG_CONNECTION'),
+   *     taskList: {
+   *       hello: helloTask,
+   *     },
+   *   }),
+   *  }),
+   * ```
+   */
   static forRootAsync(
     asyncConfig: GraphileWorkerAsyncConfiguration,
   ): DynamicModule {

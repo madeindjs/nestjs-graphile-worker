@@ -6,12 +6,12 @@ import { helloTask } from './hello.task';
 
 @Module({
   imports: [
-    // GraphileWorkerModule.forRoot({
-    //   connectionString: 'postgres://example:password@postgres/example',
-    //   taskList: {
-    //     hello: helloTask,
-    //   },
-    // }),
+    GraphileWorkerModule.forRoot({
+      connectionString: 'postgres://example:password@postgres/example',
+      taskList: {
+        hello: helloTask,
+      },
+    }),
     ConfigModule.forRoot(),
     GraphileWorkerModule.forRootAsync({
       imports: [ConfigModule],
