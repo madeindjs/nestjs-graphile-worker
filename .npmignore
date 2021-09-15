@@ -3,9 +3,13 @@ e2e/
 lib/
 .idea/
 coverage/
+src/
+.vscode/
+sample/
 
 # config
 tsconfig.json
+tsconfig.build.json
 tslint.json
 .prettierignore
 .prettierrc
@@ -16,9 +20,12 @@ jest-e2e.config.js
 renovate.json
 
 # misc
-sample/
-
 .circleci/
 .github/
 FUNDING.yml
 docker-compose.yml
+.env
+.eslintrc.js
+CHANGELOG.md
+nodemon.json
+*.tgz
