@@ -2,7 +2,7 @@
 
 [![npm version](https://badge.fury.io/js/nestjs-graphile-worker.svg)](https://badge.fury.io/js/nestjs-graphile-worker)
 
-This is wrapper for [Nest.js](https://github.com/nestjs/nest) and [Graphile Worker](https://github.com/graphile/worker).
+A [Nest.js](https://github.com/nestjs/nest) wrapper for [Graphile Worker](https://github.com/graphile/worker).
 
 What is Graphile worker ?
 
