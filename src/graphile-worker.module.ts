@@ -11,6 +11,7 @@ import { ListenerExplorerService } from './services/listener-explorer.service';
 import { MetadataAccessorService } from './services/metadata-accessor.service';
 import { TaskExplorerService } from './services/task-explorer.service';
 import { WorkerService } from './services/worker.service';
+import { RunnerLogger } from './utils/graphile-worker-logger.utils';
 
 export const GRAPHILE_WORKER_TOKEN = Symbol.for('NestJsGraphileWorker');
 
@@ -112,6 +113,7 @@ function buildRunnerOptions(
 
   return {
     ...configuration,
+    logger: RunnerLogger,
     events,
   };
 }

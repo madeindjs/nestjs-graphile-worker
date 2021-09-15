@@ -41,6 +41,7 @@ describe(GraphileWorkerModule.name, () => {
 
       expect(runnerOptions.connectionString).toEqual(connectionString);
       expect(runnerOptions.events).toBeDefined;
+      expect(runnerOptions.logger).toBeDefined;
     });
   });
 
@@ -72,6 +73,7 @@ describe(GraphileWorkerModule.name, () => {
 
       expect(runnerOptions.connectionString).toEqual(connectionString);
       expect(runnerOptions.events).toBeDefined;
+      expect(runnerOptions.logger).toBeDefined;
     });
   });
 });
