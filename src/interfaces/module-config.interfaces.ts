@@ -22,7 +22,7 @@ export interface GraphileWorkerAsyncConfiguration
   /**
    * Factory function that returns an instance of the provider to be injected.
    */
-  useFactory?: (
+  useFactory: (
     ...args: any[]
   ) => Promise<GraphileWorkerConfiguration> | GraphileWorkerConfiguration;
 

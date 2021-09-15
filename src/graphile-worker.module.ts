@@ -5,7 +5,6 @@ import { RunnerOptions } from 'graphile-worker';
 import {
   GraphileWorkerAsyncConfiguration,
   GraphileWorkerConfiguration,
-  GraphileWorkerConfigurationFactory,
   RUNNER_OPTIONS_KEY,
 } from './interfaces/module-config.interfaces';
 import { ListenerExplorerService } from './services/listener-explorer.service';
@@ -37,16 +36,13 @@ export class GraphileWorkerModule {
    * ```ts
    *  GraphileWorkerModule.forRoot({
    *   connectionString: 'postgres://example:password@postgres/example',
-   *   taskList: {
-   *     hello: helloTask,
-   *   },
    *  }),
    * ```
    */
   static forRoot(config: GraphileWorkerConfiguration): DynamicModule {
     const graphileConfigurationServiceProvider: Provider = {
       provide: RUNNER_OPTIONS_KEY,
-      useValue: config,
+      useValue: buildRunnerOptions(config),
     };
 
     return {
@@ -69,9 +65,6 @@ export class GraphileWorkerModule {
    *   inject: [ConfigService],
    *   useFactory: (config: ConfigService) => ({
    *     connectionString: config.get('PG_CONNECTION'),
-   *     taskList: {
-   *       hello: helloTask,
-   *     },
    *   }),
    *  }),
    * ```
@@ -81,12 +74,14 @@ export class GraphileWorkerModule {
   ): DynamicModule {
     const providers = this.createAsyncSharedConfigurationProviders(asyncConfig);
 
+    const configImports = asyncConfig.imports ?? [];
+
     return {
       global: true,
       module: GraphileWorkerModule,
-      imports: [...asyncConfig.imports, ...internalsModules],
+      imports: [...configImports, ...internalsModules],
       providers: [...providers, ...internalsProviders],
-      exports: providers,
+      exports: [WorkerService],
     };
   }
 
@@ -99,24 +94,11 @@ export class GraphileWorkerModule {
   private static createAsyncSharedConfigurationProvider(
     options: GraphileWorkerAsyncConfiguration,
   ): Provider {
-    if (options.useFactory) {
-      return {
-        provide: RUNNER_OPTIONS_KEY,
-        inject: options.inject || [],
-        useFactory: async (...args: any[]) => {
-          const config = await options.useFactory(...args);
-          return buildRunnerOptions(config);
-        },
-      };
-    }
-
     return {
       provide: RUNNER_OPTIONS_KEY,
-      inject: options.inject,
-      useFactory: async (
-        optionsFactory: GraphileWorkerConfigurationFactory,
-      ) => {
-        const config = await optionsFactory.createSharedConfiguration();
+      inject: options.inject || [],
+      useFactory: async (...args: any[]) => {
+        const config = await options.useFactory(...args);
         return buildRunnerOptions(config);
       },
     };

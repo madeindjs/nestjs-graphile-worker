@@ -9,7 +9,9 @@ import { TaskExplorerService } from './task-explorer.service';
 @Task('hello')
 class HelloTask {
   @TaskHandler()
-  handler() {}
+  handler() {
+    return 'hello';
+  }
 }
 
 describe(TaskExplorerService.name, () => {
@@ -28,10 +30,11 @@ describe(TaskExplorerService.name, () => {
     expect(service).toBeDefined();
   });
 
-  describe('explore', () => {
+  describe('onModuleInit', () => {
     it('should register TestListenerService', () => {
-      service.explore();
+      service.onModuleInit();
       expect(service.taskList.hello).toBeDefined;
+      expect(service.taskList.hello({}, undefined)).toEqual('hello');
     });
   });
 });
