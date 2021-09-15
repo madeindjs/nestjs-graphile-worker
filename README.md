@@ -1,6 +1,7 @@
 # Graphile Worker for Nest.js
 
 [![npm version](https://badge.fury.io/js/nestjs-graphile-worker.svg)](https://badge.fury.io/js/nestjs-graphile-worker)
+![Test status](https://github.com/madeindjs/nestjs-graphile-worker/actions/workflows/main.yml/badge.svg)
 
 A [Nest.js](https://github.com/nestjs/nest) wrapper for [Graphile Worker](https://github.com/graphile/worker).
 
