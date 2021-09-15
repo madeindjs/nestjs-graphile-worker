@@ -2,10 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Helpers } from 'graphile-worker';
 import { Task, TaskHandler } from '../../src/index';
 
-export function helloTask(payload: any, helpers: Helpers) {
-  console.log(`hello task %o`, payload);
-}
-
 @Injectable()
 @Task('hello')
 export class HelloTask {

@@ -11,4 +11,9 @@ export class AppService {
   onJobSuccess({ job }: WorkerEventMap['job:success']) {
     this.logger.debug(`job #${job.id} finished`);
   }
+
+  @OnWorkerEvent('job:error')
+  onJobError({ job, error }: WorkerEventMap['job:error']) {
+    this.logger.error(`job #${job.id} fail ${JSON.stringify(error)}`);
+  }
 }
