@@ -41,9 +41,6 @@ import { AppController } from './app.controller';
   imports: [
     GraphileWorkerModule.forRoot({
       connectionString: 'postgres://example:password@postgres/example',
-      taskList: {
-        hello: helloTask,
-      },
     }),
   ],
   controllers: [AppController],
