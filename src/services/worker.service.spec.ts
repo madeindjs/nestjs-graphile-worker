@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RunnerOptions } from 'graphile-worker';
 import { RUNNER_OPTIONS_KEY } from '../interfaces/module-config.interfaces';
 import { ListenerExplorerService } from './listener-explorer.service';
+import { TaskExplorerService } from './task-explorer.service';
 import { WorkerService } from './worker.service';
 
 describe(WorkerService.name, () => {
@@ -15,6 +16,12 @@ describe(WorkerService.name, () => {
           provide: ListenerExplorerService,
           useValue: {
             listeners: [],
+          },
+        },
+        {
+          provide: TaskExplorerService,
+          useValue: {
+            taskList: {},
           },
         },
         {

@@ -1,6 +1,6 @@
-import { GraphileWorkerModule } from '@app/graphile-worker';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { GraphileWorkerModule } from '../../src/index';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { HelloTask } from './hello.task';

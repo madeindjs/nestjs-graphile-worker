@@ -6,7 +6,10 @@ export const RUNNER_OPTIONS_KEY = Symbol.for('RUNNER_OPTIONS_KEY');
 /**
  * We use `events` internally for decorators.
  */
-export type GraphileWorkerConfiguration = Omit<RunnerOptions, 'events'>;
+export type GraphileWorkerConfiguration = Omit<
+  RunnerOptions,
+  'events' | 'taskList'
+>;
 
 export interface GraphileWorkerConfigurationFactory {
   createSharedConfiguration():
@@ -19,7 +22,7 @@ export interface GraphileWorkerAsyncConfiguration
   /**
    * Factory function that returns an instance of the provider to be injected.
    */
-  useFactory?: (
+  useFactory: (
     ...args: any[]
   ) => Promise<GraphileWorkerConfiguration> | GraphileWorkerConfiguration;
 

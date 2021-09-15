@@ -1,8 +1,8 @@
-# [Graphile Worker](https://github.com/graphile/worker) for [Nest](https://github.com/nestjs/nest)
+# Graphile Worker for Nest.js
 
 [![npm version](https://badge.fury.io/js/nestjs-graphile-worker.svg)](https://badge.fury.io/js/nestjs-graphile-worker)
 
-This is wrapper for Nest.js and [Graphile Worker](https://github.com/graphile/worker).
+This is wrapper for [Nest.js](https://github.com/nestjs/nest) and [Graphile Worker](https://github.com/graphile/worker).
 
 What is Graphile worker ?
 
@@ -14,9 +14,10 @@ Why you should prefer Graphile Worker instead of [Bull](https://github.com/nestj
 
 ## Features
 
-- use a `GraphileWorkerModule` to register Graphile Worker with a `asRootAsync` to pass dynamic parameters
+- use a `GraphileWorkerModule.forRoot` to register Graphile Worker (support `asRootAsync` as well)
 - provide a `WorkerService` to add jobs or start runner
-- provide a `OnWorkerEvenet` decorator to add custom behavior on `job:success` for example
+- provide a `@OnWorkerEvent` decorator to add custom behavior on `job:success` for example
+- provide a `@Task(name)` decorator to define your injectable tasks
 
 ## Installation
 
@@ -80,6 +81,46 @@ import { helloTask } from './hello.task';
 export class AppModule {}
 ```
 
+## Create task
+
+To create task you need to define an `@Injectable` class with `@Task(name)` decorator who contains a decorated method `@TaskHandler`:
+
+```ts
+import { Injectable, Logger } from '@nestjs/common';
+import { Helpers } from 'graphile-worker';
+import { Task, TaskHandler } from '../../src/index';
+
+@Injectable()
+@Task('hello')
+export class HelloTask {
+  private logger = new Logger(HelloTask.name);
+
+  @TaskHandler()
+  handler(payload: any, _helpers: Helpers) {
+    this.logger.log(`handle ${JSON.stringify(payload)}`);
+  }
+}
+```
+
+Then do not forget to register this class as provider in your module:
+
+```ts
+import { Module } from '@nestjs/common';
+import { HelloTask } from './hello.task';
+// ...
+
+@Module({
+  imports: [
+    /* ... */
+  ],
+  controllers: [
+    /* ... */
+  ],
+  providers: [HelloTask],
+})
+export class AppModule {}
+```
+
 ## Create jobs
 
 You may use `WorkerService`:
@@ -101,9 +142,7 @@ export class AppController {
   @Post('bulk')
   @HttpCode(201)
   async addJobs() {
-    const jobs: Array<{ identifier: string; payload?: unknown }> = new Array(
-      100,
-    )
+    const jobs = new Array(100)
       .fill(undefined)
       .map((_, i) => ({ identifier: 'hello', payload: { hello: i } }));
 
@@ -131,12 +170,14 @@ bootstrap();
 
 ## `OnWorkerEvent` decorator
 
+This decorator allow you to listen all [GRaphile Worker event](https://github.com/graphile/worker#workerevents)
+
 You need to add `@GraphileWorkerListener` decorator on your class and then set `@OnWorkerEvent(eventName)` on method:
 
 ```ts
-import { GraphileWorkerListener, OnWorkerEvent } from '@app/graphile-worker';
 import { Injectable, Logger } from '@nestjs/common';
 import { WorkerEventMap } from 'graphile-worker';
+import { GraphileWorkerListener, OnWorkerEvent } from '../../src/index';
 
 @Injectable()
 @GraphileWorkerListener()
@@ -146,12 +187,14 @@ export class AppService {
   @OnWorkerEvent('job:success')
   onJobSuccess({ job }: WorkerEventMap['job:success']) {
     this.logger.debug(`job #${job.id} finished`);
-    // output: [Nest] 1732  - 09/14/2021, 12:42:45 PM   DEBUG [AppService] job #349 finished
+  }
+
+  @OnWorkerEvent('job:error')
+  onJobError({ job, error }: WorkerEventMap['job:error']) {
+    this.logger.error(`job #${job.id} fail ${JSON.stringify(error)}`);
   }
 }
 ```
-
-You can find a complete list of available event on [Graphile Worker's documentation](https://github.com/graphile/worker#workerevents).
 
 ## Test
 
@@ -159,13 +202,14 @@ You can find a complete list of available event on [Graphile Worker's documentat
 # unit tests
 $ npm run test
 
-# e2e tests
-$ npm run test:e2e
-
 # test coverage
 $ npm run test:cov
 ```
 
 # Sample
 
-You can find a [sample](./sample/README.md) who use library.
+You can find a [sample](./sample/) who use library. To run it, simply `npm install` and then:
+
+```sh
+docker-compose up
+```

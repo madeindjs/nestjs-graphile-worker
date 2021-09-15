@@ -4,7 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import {
   GraphileWorkerListener,
   OnWorkerEvent,
-} from '../decorators/worker-hooks.decorators';
+} from '../decorators/worker.decorators';
 import { ListenerExplorerService } from './listener-explorer.service';
 import { MetadataAccessorService } from './metadata-accessor.service';
 
@@ -12,10 +12,14 @@ import { MetadataAccessorService } from './metadata-accessor.service';
 @GraphileWorkerListener()
 class TestListenerService {
   @OnWorkerEvent('job:success')
-  onJobSuccess() {}
+  onJobSuccess() {
+    return 'job:success';
+  }
 
   @OnWorkerEvent('job:error')
-  onJobError() {}
+  onJobError() {
+    return 'job:error';
+  }
 }
 
 describe(ListenerExplorerService.name, () => {
@@ -38,15 +42,25 @@ describe(ListenerExplorerService.name, () => {
     expect(service).toBeDefined();
   });
 
-  describe('explore', () => {
+  describe('onModuleInit', () => {
     it('should register TestListenerService', () => {
-      service.explore();
+      service.onModuleInit();
       expect(service.listeners).toHaveLength(2);
 
       const eventsRegistered = service.listeners.map((l) => l.event);
 
       expect(eventsRegistered).toContain('job:success');
       expect(eventsRegistered).toContain('job:error');
+
+      const successHandler = service.listeners.find(
+        ({ event }) => event === 'job:success',
+      );
+      expect(successHandler.callback()).toEqual('job:success');
+
+      const errorHandler = service.listeners.find(
+        ({ event }) => event === 'job:error',
+      );
+      expect(errorHandler.callback()).toEqual('job:error');
     });
   });
 });

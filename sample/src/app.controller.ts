@@ -1,5 +1,5 @@
-import { WorkerService } from '@app/graphile-worker';
 import { Controller, HttpCode, Post } from '@nestjs/common';
+import { WorkerService } from '../../src/index';
 
 @Controller()
 export class AppController {
