@@ -1,6 +1,6 @@
 # Changelog
 
-## Current
+## v0.1.0
 
 - **feat(task)**: provide a `@Task(name)` decorator to define your injectable tasks
 - **feat(logger)**: provide a Nest.js logger for GraphileWorker runner
