@@ -11,7 +11,7 @@ import { MetadataAccessorService } from './metadata-accessor.service';
  * Heavily inspired from [`BullExplorer`](https://github.com/nestjs/bull/blob/c230eab1dc26fb743a3428e61043167866b1e377/lib/bull.explorer.ts)
  */
 @Injectable()
-export class ListenerExplorerService implements OnModuleInit {
+export class ListenerExplorerService {
   private readonly logger = new Logger(ListenerExplorerService.name);
 
   public readonly listeners: { event: WorkerEventName; callback: Function }[] =
@@ -21,9 +21,7 @@ export class ListenerExplorerService implements OnModuleInit {
     private readonly discoveryService: DiscoveryService,
     private readonly metadataAccessor: MetadataAccessorService,
     private readonly metadataScanner: MetadataScanner,
-  ) {}
-
-  onModuleInit() {
+  ) {
     this.explore();
   }
 
