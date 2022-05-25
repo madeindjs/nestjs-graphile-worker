@@ -23,7 +23,7 @@ Why you should prefer Graphile Worker instead of [Bull](https://github.com/nestj
 ## Installation
 
 ```bash
-$ npm install nest-graphile-worker
+$ npm install nestjs-graphile-worker
 ```
 
 ## Usage
