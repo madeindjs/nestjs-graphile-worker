@@ -16,7 +16,6 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "prepare": "npm run build",
     "prebuild": "rimraf dist",
     "build": "nest build",
     "sample": "nodemon",
