@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.2.0
+
+- **chore**: update packages & support Nest.js V9 [#8](https://github.com/madeindjs/nestjs-graphile-worker/pull/8)
+
 ## v0.1.0
 
 - **feat(task)**: provide a `@Task(name)` decorator to define your injectable tasks
