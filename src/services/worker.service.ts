@@ -93,7 +93,8 @@ export class WorkerService {
     this.isMigrationDone = true;
   }
 
-  private hookEvents() {
+  private async hookEvents() {
+    await this.listenerExplorerService.ensureInitialized();
     const events = this.listenerExplorerService.listeners.map(
       ({ event }) => event,
     );
