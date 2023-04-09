@@ -17,6 +17,8 @@ export class ListenerExplorerService implements OnModuleInit {
   public readonly listeners: { event: WorkerEventName; callback: Function }[] =
     [];
 
+  private resolveInitialized: () => void;
+
   constructor(
     private readonly discoveryService: DiscoveryService,
     private readonly metadataAccessor: MetadataAccessorService,
@@ -25,6 +27,12 @@ export class ListenerExplorerService implements OnModuleInit {
 
   onModuleInit() {
     this.explore();
+  }
+
+  async ensureInitialized(): Promise<void> {
+    return new Promise((resolve) => {
+      this.resolveInitialized = resolve;
+    });
   }
 
   explore() {
@@ -59,6 +67,8 @@ export class ListenerExplorerService implements OnModuleInit {
           }
         },
       );
+
+      this.resolveInitialized();
     });
   }
 }
