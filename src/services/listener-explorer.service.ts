@@ -68,7 +68,9 @@ export class ListenerExplorerService implements OnModuleInit {
         },
       );
 
-      this.resolveInitialized();
+      if (this.resolveInitialized instanceof Function) {
+        this.resolveInitialized();
+      }
     });
   }
 }

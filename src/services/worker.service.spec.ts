@@ -16,6 +16,7 @@ describe(WorkerService.name, () => {
           provide: ListenerExplorerService,
           useValue: {
             listeners: [],
+            ensureInitialized: () => {},
           },
         },
         {
