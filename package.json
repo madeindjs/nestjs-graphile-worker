@@ -1,6 +1,6 @@
 {
   "name": "nestjs-graphile-worker",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "A Nest.js wrapper for Graphile Worker",
   "author": "Alexandre Rousseau <alexandre@rsseau.fr>",
   "private": false,
