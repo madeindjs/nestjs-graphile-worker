@@ -102,7 +102,7 @@ export class WorkerService {
     for (const event of uniq(events)) {
       this.options.events.on(event, (...args: any[]) => {
         this.listenerExplorerService.listeners
-          .filter(({ event }) => event === event)
+          .filter(({ event: e }) => e === event)
           .forEach(({ callback }) => callback(...args));
       });
     }
