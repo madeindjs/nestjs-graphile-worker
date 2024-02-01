@@ -39,6 +39,7 @@ export class WorkerService {
     this.logger.debug('Start runner');
 
     const runner = await run(this.options);
+    await runner.promise;
     return runner;
   }
 
