@@ -3,6 +3,7 @@ import {
   Job,
   makeWorkerUtils,
   run,
+  Runner,
   RunnerOptions,
   runOnce,
   TaskSpec,
@@ -32,13 +33,14 @@ export class WorkerService {
    *
    * The resolved `Runner` object has a number of helpers on it, see [Runner object](https://github.com/graphile/worker#runner-object) for more information.
    */
-  async run(): Promise<void> {
+  async run(): Promise<Runner> {
     await this.runMigrations();
 
     this.logger.debug('Start runner');
 
     const runner = await run(this.options);
-    return runner.promise;
+    await runner.promise;
+    return runner;
   }
 
   /**
