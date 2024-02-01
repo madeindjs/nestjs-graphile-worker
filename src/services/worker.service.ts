@@ -1,13 +1,13 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   Job,
-  makeWorkerUtils,
-  run,
   Runner,
   RunnerOptions,
-  runOnce,
   TaskSpec,
   WorkerUtils,
+  makeWorkerUtils,
+  run,
+  runOnce,
 } from 'graphile-worker';
 import { RUNNER_OPTIONS_KEY } from '../interfaces/module-config.interfaces';
 import { uniq } from '../utils/array.utils';
@@ -38,9 +38,7 @@ export class WorkerService {
 
     this.logger.debug('Start runner');
 
-    const runner = await run(this.options);
-    await runner.promise;
-    return runner;
+    return await run(this.options);
   }
 
   /**
