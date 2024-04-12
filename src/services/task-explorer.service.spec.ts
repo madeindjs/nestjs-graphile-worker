@@ -1,16 +1,18 @@
-import { Injectable } from '@nestjs/common';
-import { DiscoveryModule } from '@nestjs/core';
-import { Test, TestingModule } from '@nestjs/testing';
-import { Task, TaskHandler } from '../decorators/task.decorators';
-import { MetadataAccessorService } from './metadata-accessor.service';
-import { TaskExplorerService } from './task-explorer.service';
+import { Injectable } from "@nestjs/common";
+import { DiscoveryModule } from "@nestjs/core";
+import { Test, TestingModule } from "@nestjs/testing";
+import * as assert from "node:assert/strict";
+import { beforeEach, describe, it } from "node:test";
+import { Task, TaskHandler } from "../decorators/task.decorators";
+import { MetadataAccessorService } from "./metadata-accessor.service";
+import { TaskExplorerService } from "./task-explorer.service";
 
 @Injectable()
-@Task('hello')
+@Task("hello")
 class HelloTask {
   @TaskHandler()
   handler() {
-    return 'hello';
+    return "hello";
   }
 }
 
@@ -26,15 +28,15 @@ describe(TaskExplorerService.name, () => {
     service = module.get(TaskExplorerService);
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+  it("should be defined", () => {
+    assert.ok(service);
   });
 
-  describe('onModuleInit', () => {
-    it('should register TestListenerService', () => {
+  describe("onModuleInit", () => {
+    it("should register TestListenerService", () => {
       service.onModuleInit();
-      expect(service.taskList.hello).toBeDefined;
-      expect(service.taskList.hello({}, undefined)).toEqual('hello');
+      assert.ok(service.taskList.hello);
+      assert.strictEqual(service.taskList.hello({}, undefined), "hello");
     });
   });
 });
