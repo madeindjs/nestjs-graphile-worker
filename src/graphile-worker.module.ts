@@ -112,8 +112,8 @@ function buildRunnerOptions(
   const events = new EventEmitter();
 
   return {
-    ...configuration,
     logger: RunnerLogger,
+    ...configuration,
     events,
   };
 }
