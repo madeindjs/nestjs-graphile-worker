@@ -8,6 +8,7 @@ import {
   makeWorkerUtils,
   run,
   runOnce,
+  runMigrations,
 } from 'graphile-worker';
 import { RUNNER_OPTIONS_KEY } from '../interfaces/module-config.interfaces';
 import { uniq } from '../utils/array.utils';
@@ -88,6 +89,8 @@ export class WorkerService {
     if (this.isMigrationDone) {
       return;
     }
+
+    await runMigrations(this.options);
 
     this.logger.debug('Run migrations');
     this.isMigrationDone = true;
