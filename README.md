@@ -34,14 +34,14 @@ You can use `GraphileWorkerModule.forRoot`:
 
 ```ts
 // src/app.module.ts
-import { GraphileWorkerModule } from 'nest-graphile-worker';
-import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
+import { GraphileWorkerModule } from "nest-graphile-worker";
+import { Module } from "@nestjs/common";
+import { AppController } from "./app.controller";
 
 @Module({
   imports: [
     GraphileWorkerModule.forRoot({
-      connectionString: 'postgres://example:password@postgres/example',
+      connectionString: "postgres://example:password@postgres/example",
     }),
   ],
   controllers: [AppController],
@@ -53,11 +53,11 @@ export class AppModule {}
 Or you can use `GraphileWorkerModule.forRootAsync`:
 
 ```ts
-import { GraphileWorkerModule } from '@app/graphile-worker';
-import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AppController } from './app.controller';
-import { helloTask } from './hello.task';
+import { GraphileWorkerModule } from "nestjs-graphile-worker";
+import { Module } from "@nestjs/common";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { AppController } from "./app.controller";
+import { helloTask } from "./hello.task";
 
 @Module({
   imports: [
@@ -66,7 +66,7 @@ import { helloTask } from './hello.task';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        connectionString: config.get('PG_CONNECTION'),
+        connectionString: config.get("PG_CONNECTION"),
         taskList: {
           hello: helloTask,
         },
@@ -84,12 +84,12 @@ export class AppModule {}
 To create task you need to define an `@Injectable` class with `@Task(name)` decorator who contains a decorated method `@TaskHandler`:
 
 ```ts
-import { Injectable, Logger } from '@nestjs/common';
-import { Helpers } from 'graphile-worker';
-import { Task, TaskHandler } from '../../src/index';
+import { Injectable, Logger } from "@nestjs/common";
+import type { Helpers } from "graphile-worker";
+import { Task, TaskHandler } from "../../src/index";
 
 @Injectable()
-@Task('hello')
+@Task("hello")
 export class HelloTask {
   private logger = new Logger(HelloTask.name);
 
@@ -103,8 +103,8 @@ export class HelloTask {
 Then do not forget to register this class as provider in your module:
 
 ```ts
-import { Module } from '@nestjs/common';
-import { HelloTask } from './hello.task';
+import { Module } from "@nestjs/common";
+import { HelloTask } from "./hello.task";
 // ...
 
 @Module({
@@ -124,8 +124,8 @@ export class AppModule {}
 You may use `WorkerService`:
 
 ```ts
-import { WorkerService } from '@app/graphile-worker';
-import { Controller, HttpCode, Post } from '@nestjs/common';
+import { WorkerService } from "nestjs-graphile-worker";
+import { Controller, HttpCode, Post } from "@nestjs/common";
 
 @Controller()
 export class AppController {
@@ -134,15 +134,15 @@ export class AppController {
   @Post()
   @HttpCode(201)
   async addJob() {
-    await this.graphileWorker.addJob('hello', { hello: 'world' });
+    await this.graphileWorker.addJob("hello", { hello: "world" });
   }
 
-  @Post('bulk')
+  @Post("bulk")
   @HttpCode(201)
   async addJobs() {
     const jobs = new Array(100)
       .fill(undefined)
-      .map((_, i) => ({ identifier: 'hello', payload: { hello: i } }));
+      .map((_, i) => ({ identifier: "hello", payload: { hello: i } }));
 
     return this.graphileWorker.addJobs(jobs);
   }
@@ -154,9 +154,9 @@ export class AppController {
 Add `WorkerService.run` in `main.ts` file:
 
 ```ts
-import { WorkerService } from '@app/graphile-worker';
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { WorkerService } from "nestjs-graphile-worker";
+import { NestFactory } from "@nestjs/core";
+import { AppModule } from "./app.module";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -168,27 +168,27 @@ bootstrap();
 
 ## `OnWorkerEvent` decorator
 
-This decorator allow you to listen all [GRaphile Worker event](https://github.com/graphile/worker#workerevents)
+This decorator allow you to listen all [Graphile Worker event](https://github.com/graphile/worker#workerevents)
 
 You need to add `@GraphileWorkerListener` decorator on your class and then set `@OnWorkerEvent(eventName)` on method:
 
 ```ts
-import { Injectable, Logger } from '@nestjs/common';
-import { WorkerEventMap } from 'graphile-worker';
-import { GraphileWorkerListener, OnWorkerEvent } from '../../src/index';
+import { Injectable, Logger } from "@nestjs/common";
+import { WorkerEventMap } from "graphile-worker";
+import { GraphileWorkerListener, OnWorkerEvent } from "../../src/index";
 
 @Injectable()
 @GraphileWorkerListener()
 export class AppService {
   private readonly logger = new Logger(AppService.name);
 
-  @OnWorkerEvent('job:success')
-  onJobSuccess({ job }: WorkerEventMap['job:success']) {
+  @OnWorkerEvent("job:success")
+  onJobSuccess({ job }: WorkerEventMap["job:success"]) {
     this.logger.debug(`job #${job.id} finished`);
   }
 
-  @OnWorkerEvent('job:error')
-  onJobError({ job, error }: WorkerEventMap['job:error']) {
+  @OnWorkerEvent("job:error")
+  onJobError({ job, error }: WorkerEventMap["job:error"]) {
     this.logger.error(`job #${job.id} fail ${JSON.stringify(error)}`);
   }
 }
