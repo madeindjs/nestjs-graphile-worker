@@ -1,9 +1,9 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { DiscoveryService } from '@nestjs/core';
-import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
-import { MetadataScanner } from '@nestjs/core/metadata-scanner';
-import { WorkerEventName } from '../interfaces/worker.interfaces';
-import { MetadataAccessorService } from './metadata-accessor.service';
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { DiscoveryService } from "@nestjs/core";
+import { InstanceWrapper } from "@nestjs/core/injector/instance-wrapper";
+import { MetadataScanner } from "@nestjs/core/metadata-scanner";
+import { WorkerEventName } from "../interfaces/worker.interfaces";
+import { MetadataAccessorService } from "./metadata-accessor.service";
 
 /**
  * This service is responsible to scan all [Worker decorators](../decorators/worker.decorators.ts) and register them.
@@ -17,7 +17,7 @@ export class ListenerExplorerService implements OnModuleInit {
   public readonly listeners: { event: WorkerEventName; callback: Function }[] =
     [];
 
-  private resolveInitialized: () => void;
+  private resolveInitialized: () => void = () => {};
 
   constructor(
     private readonly discoveryService: DiscoveryService,
@@ -54,9 +54,11 @@ export class ListenerExplorerService implements OnModuleInit {
               instance[key],
             );
 
+            if (event === undefined) return;
+
             this.listeners.push({
               event,
-              callback: (...args) => instance[key](...args),
+              callback: (...args: unknown[]) => instance[key](...args),
             });
 
             this.logger.debug(

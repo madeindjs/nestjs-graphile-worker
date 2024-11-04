@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import {
   Job,
   Runner,
@@ -8,16 +8,16 @@ import {
   makeWorkerUtils,
   run,
   runOnce,
-} from 'graphile-worker';
-import { RUNNER_OPTIONS_KEY } from '../interfaces/module-config.interfaces';
-import { uniq } from '../utils/array.utils';
-import { ListenerExplorerService } from './listener-explorer.service';
-import { TaskExplorerService } from './task-explorer.service';
+} from "graphile-worker";
+import { RUNNER_OPTIONS_KEY } from "../interfaces/module-config.interfaces";
+import { uniq } from "../utils/array.utils";
+import { ListenerExplorerService } from "./listener-explorer.service";
+import { TaskExplorerService } from "./task-explorer.service";
 
 @Injectable()
 export class WorkerService {
   private readonly logger = new Logger(WorkerService.name);
-  private isMigrationDone: boolean;
+  private isMigrationDone = false;
 
   constructor(
     @Inject(RUNNER_OPTIONS_KEY) private readonly options: RunnerOptions,
@@ -36,7 +36,7 @@ export class WorkerService {
   async run(): Promise<Runner> {
     await this.runMigrations();
 
-    this.logger.debug('Start runner');
+    this.logger.debug("Start runner");
 
     return await run(this.options);
   }
@@ -47,7 +47,7 @@ export class WorkerService {
   async runOnce(): Promise<void> {
     await this.runMigrations();
 
-    this.logger.debug('Start runner');
+    this.logger.debug("Start runner");
 
     await runOnce(this.options);
   }
@@ -89,7 +89,7 @@ export class WorkerService {
       return;
     }
 
-    this.logger.debug('Run migrations');
+    this.logger.debug("Run migrations");
     this.isMigrationDone = true;
   }
 
@@ -98,6 +98,8 @@ export class WorkerService {
     const events = this.listenerExplorerService.listeners.map(
       ({ event }) => event,
     );
+
+    if (this.options.events === undefined) return;
 
     for (const event of uniq(events)) {
       this.options.events.on(event, (...args: any[]) => {

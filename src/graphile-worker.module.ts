@@ -1,19 +1,19 @@
-import { DynamicModule, Module, Provider } from '@nestjs/common';
-import { DiscoveryModule } from '@nestjs/core';
-import { EventEmitter } from 'events';
-import { RunnerOptions } from 'graphile-worker';
+import { DynamicModule, Module, Provider } from "@nestjs/common";
+import { DiscoveryModule } from "@nestjs/core";
+import { EventEmitter } from "node:events";
+import { RunnerOptions } from "graphile-worker";
 import {
   GraphileWorkerAsyncConfiguration,
   GraphileWorkerConfiguration,
   RUNNER_OPTIONS_KEY,
-} from './interfaces/module-config.interfaces';
-import { ListenerExplorerService } from './services/listener-explorer.service';
-import { MetadataAccessorService } from './services/metadata-accessor.service';
-import { TaskExplorerService } from './services/task-explorer.service';
-import { WorkerService } from './services/worker.service';
-import { RunnerLogger } from './utils/graphile-worker-logger.utils';
+} from "./interfaces/module-config.interfaces";
+import { ListenerExplorerService } from "./services/listener-explorer.service";
+import { MetadataAccessorService } from "./services/metadata-accessor.service";
+import { TaskExplorerService } from "./services/task-explorer.service";
+import { WorkerService } from "./services/worker.service";
+import { RunnerLogger } from "./utils/graphile-worker-logger.utils";
 
-export const GRAPHILE_WORKER_TOKEN = Symbol.for('NestJsGraphileWorker');
+export const GRAPHILE_WORKER_TOKEN = Symbol.for("NestJsGraphileWorker");
 
 const internalsProviders = [
   MetadataAccessorService,

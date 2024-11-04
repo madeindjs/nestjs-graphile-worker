@@ -1,9 +1,9 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { DiscoveryService } from '@nestjs/core';
-import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
-import { MetadataScanner } from '@nestjs/core/metadata-scanner';
-import { TaskList } from 'graphile-worker';
-import { MetadataAccessorService } from './metadata-accessor.service';
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { DiscoveryService } from "@nestjs/core";
+import { InstanceWrapper } from "@nestjs/core/injector/instance-wrapper";
+import { MetadataScanner } from "@nestjs/core/metadata-scanner";
+import { TaskList } from "graphile-worker";
+import { MetadataAccessorService } from "./metadata-accessor.service";
 
 /**
  * This service is responsible to scan all [Task decorators](../decorators/task.decorators.ts) and register them.
@@ -44,6 +44,8 @@ export class TaskExplorerService implements OnModuleInit {
             const name = this.metadataAccessor.getTaskMetadata(
               wrapper.metatype,
             );
+
+            if (name === undefined) return;
 
             this.taskList[name] = (...args) => instance[key](...args);
 

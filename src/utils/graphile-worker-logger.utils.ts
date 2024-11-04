@@ -3,11 +3,11 @@ import {
   Logger as GraphileLogger,
   LogLevel,
   LogMeta,
-} from '@graphile/logger';
-import { Logger } from '@nestjs/common';
+} from "@graphile/logger";
+import { Logger } from "@nestjs/common";
 
-function graphileWorkerLogFactory(_scope): LogFunction {
-  const logger = new Logger('GraphileWorker');
+function graphileWorkerLogFactory(): LogFunction {
+  const logger = new Logger("GraphileWorker");
 
   return (level: LogLevel, message: string, meta?: LogMeta) => {
     if (meta !== undefined) {

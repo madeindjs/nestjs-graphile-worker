@@ -36,7 +36,7 @@ describe(TaskExplorerService.name, () => {
     it("should register TestListenerService", () => {
       service.onModuleInit();
       assert.ok(service.taskList.hello);
-      assert.strictEqual(service.taskList.hello({}, undefined), "hello");
+      assert.strictEqual(service.taskList.hello({}, {} as any), "hello");
     });
   });
 });
