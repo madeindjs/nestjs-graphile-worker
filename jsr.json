@@ -12,6 +12,14 @@
     "experimentalDecorators": true
   },
   "publish": {
-    "exclude": ["./sample", "./docker-compose.yml", "./.github"]
+    "exclude": [
+      "./sample",
+      "./docker-compose.yml",
+      "./.github",
+      "./CHANGELOG.md",
+      "./.vscode",
+      "./.env",
+      "./.npmignore"
+    ]
   }
 }
