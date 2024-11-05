@@ -1,0 +1,17 @@
+{
+  "name": "@madeindjs/nestjs-graphile-worker",
+  "version": "0.8.0",
+  "exports": "./src/index.ts",
+  "imports": {
+    "@graphile/logger": "npm:@graphile/logger@^0.2.0",
+    "@nestjs/common": "npm:@nestjs/common@^10.0.0",
+    "@nestjs/core": "npm:@nestjs/core@^10.0.0",
+    "graphile-worker": "npm:graphile-worker@^0.16.0"
+  },
+  "compilerOptions": {
+    "experimentalDecorators": true
+  },
+  "publish": {
+    "exclude": ["./sample", "./docker-compose.yml", "./.github"]
+  }
+}

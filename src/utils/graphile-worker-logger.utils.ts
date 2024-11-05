@@ -1,9 +1,5 @@
-import {
-  LogFunction,
-  Logger as GraphileLogger,
-  LogLevel,
-  LogMeta,
-} from "@graphile/logger";
+import type { LogFunction, LogLevel, LogMeta } from "@graphile/logger";
+import { Logger as GraphileLogger } from "@graphile/logger";
 import { Logger } from "@nestjs/common";
 
 function graphileWorkerLogFactory(): LogFunction {
@@ -15,16 +11,16 @@ function graphileWorkerLogFactory(): LogFunction {
     }
 
     switch (level) {
-      case LogLevel.ERROR:
+      case "error":
         logger.error(message);
         break;
-      case LogLevel.WARNING:
+      case "warning":
         logger.warn(message);
         break;
-      case LogLevel.INFO:
+      case "info":
         logger.log(message);
         break;
-      case LogLevel.DEBUG:
+      case "debug":
         logger.debug(message, meta);
         break;
     }

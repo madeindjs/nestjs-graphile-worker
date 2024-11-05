@@ -20,6 +20,7 @@
     "build": "tsc -p tsconfig.build.json",
     "prepublish:npm": "npm run build",
     "publish:npm": "npm publish --access public",
+    "publish:jsr": "deno publish --unstable-sloppy-imports",
     "prerelease": "npm run build",
     "test": "node --test -r ts-node/register src/**/*.spec.ts"
   },
@@ -39,4 +40,3 @@
     "graphile-worker": "^0.13.0 || ^0.14.0 || ^0.15.0  || ^0.16.0"
   }
 }
-
