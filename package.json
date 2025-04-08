@@ -24,12 +24,11 @@
     "prerelease": "npm run build",
     "test": "node --test -r ts-node/register src/**/*.spec.ts"
   },
-  "dependencies": {
-    "reflect-metadata": "^0.1.12"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@nestjs/testing": "^10.1.2",
     "@types/node": "^20.8.0",
+    "reflect-metadata": "^0.1.12",
     "rimraf": "^3.0.2",
     "ts-node": "^10.9.1",
     "typescript": "^5.4.0"
@@ -37,6 +36,7 @@
   "peerDependencies": {
     "@nestjs/common": "^9.0.0 || ^10.0.0 || ^11.0.0",
     "@nestjs/core": "^9.0.0 || ^10.0.0 || ^11.0.0",
-    "graphile-worker": "^0.13.0 || ^0.14.0 || ^0.15.0  || ^0.16.0"
+    "graphile-worker": "^0.13.0 || ^0.14.0 || ^0.15.0  || ^0.16.0",
+    "reflect-metadata": "^0.1.12 || ^0.2.2"
   }
 }
