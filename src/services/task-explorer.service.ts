@@ -1,9 +1,14 @@
-import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
-import { DiscoveryService } from "@nestjs/core";
-import { InstanceWrapper } from "@nestjs/core/injector/instance-wrapper";
-import { MetadataScanner } from "@nestjs/core/metadata-scanner";
-import { TaskList } from "graphile-worker";
-import { MetadataAccessorService } from "./metadata-accessor.service";
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { DiscoveryService } from '@nestjs/core';
+import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
+import { MetadataScanner } from '@nestjs/core/metadata-scanner';
+import { TaskList } from 'graphile-worker';
+import {
+  GLOBAL_JOB_MIDDLEWARES_KEY,
+  JobMiddleware,
+} from '../interfaces/module-config.interfaces';
+import { MetadataAccessorService } from './metadata-accessor.service';
+import { MiddlewareService } from './middleware.service';
 
 /**
  * This service is responsible to scan all [Task decorators](../decorators/task.decorators.ts) and register them.
@@ -17,9 +22,12 @@ export class TaskExplorerService implements OnModuleInit {
   public readonly taskList: TaskList = {};
 
   constructor(
+    @Inject(GLOBAL_JOB_MIDDLEWARES_KEY)
+    private readonly globalMiddlewares: JobMiddleware[],
     private readonly discoveryService: DiscoveryService,
     private readonly metadataAccessor: MetadataAccessorService,
     private readonly metadataScanner: MetadataScanner,
+    private readonly middlewareService: MiddlewareService,
   ) {}
 
   onModuleInit() {
@@ -47,12 +55,29 @@ export class TaskExplorerService implements OnModuleInit {
 
             if (name === undefined) return;
 
-            this.taskList[name] = (...args) => instance[key](...args);
+            // Get the original handler
+            const originalHandler = (...args: any[]) => instance[key](...args);
+
+            // Wrap the handler with middlewares
+            const wrappedHandler = this.middlewareService.wrapTaskHandler(
+              originalHandler,
+              this.globalMiddlewares,
+            );
+
+            this.taskList[name] = wrappedHandler;
+
+            const middlewareNames = this.globalMiddlewares
+              .map((mw) => mw.name || 'anonymous')
+              .join(', ');
+            const middlewareInfo =
+              this.globalMiddlewares.length > 0
+                ? `${this.globalMiddlewares.length} middleware(s): [${middlewareNames}]`
+                : 'no middlewares';
 
             this.logger.debug(
               `Register ${name} from ${
                 (instance as Object).constructor.name
-              }.${key}`,
+              }.${key} with ${middlewareInfo}`,
             );
           }
         },

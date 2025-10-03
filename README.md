@@ -19,6 +19,7 @@ Why you should prefer Graphile Worker instead of [Bull](https://github.com/nestj
 - provide a `WorkerService` to add jobs or start runner
 - provide a `@OnWorkerEvent` decorator to add custom behavior on `job:success` for example
 - provide a `@Task(name)` decorator to define your injectable tasks
+- provide middleware support to control job execution for cross-cutting concerns (e.g. context enrichment)
 
 ## Installation
 
@@ -116,7 +117,7 @@ To create task you need to define an `@Injectable` class with `@Task(name)` deco
 ```ts
 // src/hello.task.ts
 import { Injectable, Logger } from "@nestjs/common";
-import type { Helpers } from "graphile-worker";
+import type { JobHelpers } from "graphile-worker";
 import { Task, TaskHandler } from "../../src/index";
 
 @Injectable()
@@ -125,7 +126,7 @@ export class HelloTask {
   private logger = new Logger(HelloTask.name);
 
   @TaskHandler()
-  handler(payload: any, _helpers: Helpers) {
+  handler(payload: any, _helpers: JobHelpers) {
     this.logger.log(`handle ${JSON.stringify(payload)}`);
   }
 }
@@ -226,6 +227,83 @@ export class AppService {
   }
 }
 ```
+
+### Job middlewares
+
+Middlewares can help implement cross-cutting concerns like:
+
+- **Context enrichment** - Add fresh runtime data to the job payload, or use the job data to enrich some higher-level
+context context (e.g. include the jobId in a logger context)
+- **Error handling** - Add error handling applying to all jobs, e.g. to handle the last attempt failed gracefully as
+recommended in the [Graphile Worker documentation](https://worker.graphile.org/docs/scaling#keep-your-jobs-table-small)
+- **Conditional execution** - Skip or modify job execution based on runtime conditions
+- **Rate limiting and throttling** - Prevent job execution under certain conditions
+
+The advantage of middlewares is that they execute **as part of the job execution flow**, giving you full control over
+the job's context and execution. 
+In contrast, WorkerEvent listeners execute **as separate event handlers**, making them more suitable for side effects (like notifications or monitoring) but not for controlling or modifying job execution itself.
+
+You can configure global job middlewares that will be applied to all jobs, in the order they are defined in the
+`middlewares` array:
+
+```ts
+import { GraphileWorkerModule, JobMiddleware } from "nestjs-graphile-worker";
+
+const contextMiddleware: JobMiddleware = async (payload, helpers, next) => {
+  // Add job execution context that handlers can use
+  const enrichedPayload = {
+    ...payload,
+    _jobContext: {
+      jobId: helpers.job.id,
+    }
+  };
+  
+  setLoggerContext({jobId: helpers.job.id}); // some logging util to set logging context
+
+  await next(enrichedPayload);
+};
+
+const gracefulLastAttemptFailureMiddleware: JobMiddleware = async (payload, helpers, next) => {
+  try {
+    return await next(payload);
+  } catch (error) {
+    const { job, logger } = helpers;
+
+    if (job.attempts < job.max_attempts) {
+      throw error; // Re-throw if not the last attempt
+    }
+    // Handle the last attempt error gracefully, and avoid a permafailed job being stored in the jobs table
+    logger.error(`Permanently failed to handle task ${job.task_identifier}`, { payload });
+    instrumentation.onJobFailedWithGracefulExit(job.task_identifier); // some instrumentation util for monitoring
+  }
+};
+
+@Module({
+  imports: [
+    GraphileWorkerModule.forRoot({
+      connectionString: "postgres://example:password@postgres/example",
+      middlewares: [
+        contextMiddleware, // All jobs get enriched with execution context
+      ],
+    }),
+  ],
+  // ... other module config
+})
+export class AppModule {}
+```
+
+#### Middleware troubleshooting: common issues
+
+> Take care of handling errors appropriately in your middleware.  
+> Also keep your middleware lightweight and avoid heavy computations.
+
+1. **Middleware not executing**: Ensure the middleware is added to the `middlewares` array in the configuration.
+
+2. **Tasks hanging**: Make sure every middleware calls `next()` or throws an error.
+
+3. **Payload not modified**: Ensure you're passing the modified payload to `next(modifiedPayload)`.
+
+4. **Performance issues**: Check for heavy operations in middleware that might slow down task execution.
 
 ## Sample
 

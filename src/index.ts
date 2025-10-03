@@ -3,4 +3,5 @@ export * from "./decorators/worker.decorators";
 export * from "./graphile-worker.module";
 export * from "./interfaces/module-config.interfaces";
 export * from "./interfaces/worker.interfaces";
+export * from "./services/middleware.service";
 export * from "./services/worker.service";

@@ -1,7 +1,20 @@
 import { FactoryProvider, ModuleMetadata } from '@nestjs/common';
-import { RunnerOptions } from 'graphile-worker';
+import { RunnerOptions, JobHelpers } from 'graphile-worker';
 
 export const RUNNER_OPTIONS_KEY = Symbol.for('RUNNER_OPTIONS_KEY');
+export const GLOBAL_JOB_MIDDLEWARES_KEY = Symbol.for(
+  'GLOBAL_JOB_MIDDLEWARES_KEY',
+);
+
+/**
+ * Job middleware function type.
+ * Middleware can modify payload, execute side effects, and control job execution.
+ */
+export type JobMiddleware = (
+  payload: any,
+  helpers: JobHelpers,
+  next: (payload?: any) => Promise<void>,
+) => Promise<void>;
 
 /**
  * We use `events` internally for decorators.
@@ -9,7 +22,13 @@ export const RUNNER_OPTIONS_KEY = Symbol.for('RUNNER_OPTIONS_KEY');
 export type GraphileWorkerConfiguration = Omit<
   RunnerOptions,
   'events' | 'taskList'
->;
+> & {
+  /**
+   * Global middlewares that will be applied to all jobs.
+   * Middlewares are executed in the order they are defined.
+   */
+  middlewares?: JobMiddleware[];
+};
 
 export interface GraphileWorkerConfigurationFactory {
   createSharedConfiguration():
