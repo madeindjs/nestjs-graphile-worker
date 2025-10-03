@@ -4,6 +4,8 @@ services:
     image: node:16-alpine
     working_dir: /usr/src/app
     command: sh -c "npm run sample"
+    env_file:
+      - .env
     volumes:
       - ./.:/usr/src/app
     ports:
