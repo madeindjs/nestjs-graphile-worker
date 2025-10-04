@@ -1,13 +1,11 @@
-import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { DiscoveryService } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { MetadataScanner } from '@nestjs/core/metadata-scanner';
 import { TaskList } from 'graphile-worker';
-import {
-  GLOBAL_JOB_MIDDLEWARES_KEY,
-  JobMiddleware,
-} from '../interfaces/module-config.interfaces';
+
 import { MetadataAccessorService } from './metadata-accessor.service';
+import { MiddlewareExplorerService } from './middleware-explorer.service';
 import { MiddlewareService } from './middleware.service';
 
 /**
@@ -22,11 +20,10 @@ export class TaskExplorerService implements OnModuleInit {
   public readonly taskList: TaskList = {};
 
   constructor(
-    @Inject(GLOBAL_JOB_MIDDLEWARES_KEY)
-    private readonly globalMiddlewares: JobMiddleware[],
     private readonly discoveryService: DiscoveryService,
     private readonly metadataAccessor: MetadataAccessorService,
     private readonly metadataScanner: MetadataScanner,
+    private readonly middlewareExplorerService: MiddlewareExplorerService,
     private readonly middlewareService: MiddlewareService,
   ) {}
 
@@ -58,20 +55,24 @@ export class TaskExplorerService implements OnModuleInit {
             // Get the original handler
             const originalHandler = (...args: any[]) => instance[key](...args);
 
+            // Get decorator-based global middlewares
+            const globalMiddlewares =
+              this.middlewareExplorerService.globalMiddlewares;
+
             // Wrap the handler with middlewares
             const wrappedHandler = this.middlewareService.wrapTaskHandler(
               originalHandler,
-              this.globalMiddlewares,
+              globalMiddlewares,
             );
 
             this.taskList[name] = wrappedHandler;
 
-            const middlewareNames = this.globalMiddlewares
+            const middlewareNames = globalMiddlewares
               .map((mw) => mw.name || 'anonymous')
               .join(', ');
             const middlewareInfo =
-              this.globalMiddlewares.length > 0
-                ? `${this.globalMiddlewares.length} middleware(s): [${middlewareNames}]`
+              globalMiddlewares.length > 0
+                ? `${globalMiddlewares.length} middleware(s): [${middlewareNames}]`
                 : 'no middlewares';
 
             this.logger.debug(

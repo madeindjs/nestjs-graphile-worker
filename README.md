@@ -243,51 +243,79 @@ The advantage of middlewares is that they execute **as part of the job execution
 the job's context and execution. 
 In contrast, WorkerEvent listeners execute **as separate event handlers**, making them more suitable for side effects (like notifications or monitoring) but not for controlling or modifying job execution itself.
 
-You can configure global job middlewares that will be applied to all jobs, in the order they are defined in the
-`middlewares` array:
+You can create global job middlewares using the `@Middleware({ global: true })` decorator that will be applied to all jobs:
 
 ```ts
-import { GraphileWorkerModule, JobMiddleware } from "nestjs-graphile-worker";
+import { Injectable } from "@nestjs/common";
+import { Middleware, MiddlewareProvider } from "nestjs-graphile-worker";
+import { JobHelpers } from "graphile-worker";
 
-const contextMiddleware: JobMiddleware = async (payload, helpers, next) => {
-  // Add job execution context that handlers can use
-  const enrichedPayload = {
-    ...payload,
-    _jobContext: {
-      jobId: helpers.job.id,
-    }
-  };
-  
-  setLoggerContext({jobId: helpers.job.id}); // some logging util to set logging context
+@Injectable()
+@Middleware({ global: true })
+export class ContextMiddleware implements MiddlewareProvider {
+  async use(payload: any, helpers: JobHelpers, next: Function) {
+    // Add job execution context that handlers can use
+    const enrichedPayload = {
+      ...payload,
+      _jobContext: {
+        jobId: helpers.job.id,
+      }
+    };
+    
+    setLoggerContext({jobId: helpers.job.id}); // some logging util to set logging context
 
-  await next(enrichedPayload);
-};
-
-const gracefulLastAttemptFailureMiddleware: JobMiddleware = async (payload, helpers, next) => {
-  try {
-    return await next(payload);
-  } catch (error) {
-    const { job, logger } = helpers;
-
-    if (job.attempts < job.max_attempts) {
-      throw error; // Re-throw if not the last attempt
-    }
-    // Handle the last attempt error gracefully, and avoid a permafailed job being stored in the jobs table
-    logger.error(`Permanently failed to handle task ${job.task_identifier}`, { payload });
-    instrumentation.onJobFailedWithGracefulExit(job.task_identifier); // some instrumentation util for monitoring
+    await next(enrichedPayload);
   }
-};
+}
+
+@Injectable()
+@Middleware({ global: true })
+export class GracefulLastAttemptFailureMiddleware implements MiddlewareProvider {
+  async use(payload: any, helpers: JobHelpers, next: Function) {
+    try {
+      return await next(payload);
+    } catch (error) {
+      const { job, logger } = helpers;
+
+      if (job.attempts < job.max_attempts) {
+        throw error; // Re-throw if not the last attempt
+      }
+      // Handle the last attempt error gracefully, and avoid a permafailed job being stored in the jobs table
+      logger.error(`Permanently failed to handle task ${job.task_identifier}`, { payload });
+      instrumentation.onJobFailedWithGracefulExit(job.task_identifier); // some instrumentation util for monitoring
+    }
+  }
+}
 
 @Module({
   imports: [
     GraphileWorkerModule.forRoot({
       connectionString: "postgres://example:password@postgres/example",
-      middlewares: [
-        contextMiddleware, // All jobs get enriched with execution context
-      ],
     }),
   ],
+  providers: [
+    ContextMiddleware,
+    GracefulLastAttemptFailureMiddleware,
+    // ... other providers
+  ],
   // ... other module config
+})
+export class AppModule {}
+```
+
+#### Middleware execution order
+
+**Important**: Global middleware execution order is determined by the order in which they are declared in the `providers` 
+array. Middlewares execute in the same order they appear in the array.
+
+```ts
+@Module({
+  providers: [
+    FirstMiddleware,    // Executes first
+    SecondMiddleware,   // Executes second  
+    ThirdMiddleware,    // Executes third
+    // ... other providers
+  ],
 })
 export class AppModule {}
 ```
@@ -297,7 +325,7 @@ export class AppModule {}
 > Take care of handling errors appropriately in your middleware.  
 > Also keep your middleware lightweight and avoid heavy computations.
 
-1. **Middleware not executing**: Ensure the middleware is added to the `middlewares` array in the configuration.
+1. **Middleware not executing**: Ensure the middleware class is decorated with `@Middleware({ global: true })` and registered as a provider in your module.
 
 2. **Tasks hanging**: Make sure every middleware calls `next()` or throws an error.
 

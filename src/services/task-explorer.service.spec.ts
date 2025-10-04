@@ -1,14 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { DiscoveryModule } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
+import { JobHelpers } from 'graphile-worker';
 import * as assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
+import { Middleware } from '../decorators/middleware.decorators';
 import { Task, TaskHandler } from '../decorators/task.decorators';
-import {
-  RUNNER_OPTIONS_KEY,
-  GLOBAL_JOB_MIDDLEWARES_KEY,
-} from '../interfaces/module-config.interfaces';
+import { MiddlewareProvider } from '../interfaces/middleware.interfaces';
+import { RUNNER_OPTIONS_KEY } from '../interfaces/module-config.interfaces';
 import { MetadataAccessorService } from './metadata-accessor.service';
+import { MiddlewareExplorerService } from './middleware-explorer.service';
 import { MiddlewareService } from './middleware.service';
 import { TaskExplorerService } from './task-explorer.service';
 
@@ -21,27 +22,34 @@ class HelloTask {
   }
 }
 
+@Injectable()
+@Middleware({ global: true })
+class TestMiddleware implements MiddlewareProvider {
+  async use(payload: any, _helpers: JobHelpers, next: Function) {
+    payload.middlewareApplied = true;
+    await next(payload);
+  }
+}
+
 describe(TaskExplorerService.name, () => {
   let service: TaskExplorerService;
 
-  const createTestingModule = async (middlewares: any[] = []) => {
+  const createTestingModule = async () => {
     return Test.createTestingModule({
       imports: [DiscoveryModule],
       providers: [
         TaskExplorerService,
         MetadataAccessorService,
+        MiddlewareExplorerService,
         MiddlewareService,
         HelloTask,
+        TestMiddleware,
         {
           provide: RUNNER_OPTIONS_KEY,
           useValue: {
             connectionString: 'test',
             events: {},
           },
-        },
-        {
-          provide: GLOBAL_JOB_MIDDLEWARES_KEY,
-          useValue: middlewares,
         },
       ],
     }).compile();
@@ -57,41 +65,23 @@ describe(TaskExplorerService.name, () => {
   });
 
   describe('onModuleInit', () => {
-    it('should register TestListenerService', async () => {
+    it('should register HelloTask', async () => {
       service.onModuleInit();
       assert.ok(service.taskList.hello);
       const result = await service.taskList.hello({}, {} as any);
       assert.strictEqual(result, undefined);
     });
-  });
 
-  describe('middleware registration', () => {
-    it('should register middlewares', async () => {
-      const executionOrder: string[] = [];
+    it('should register tasks with middlewares applied', async () => {
+      service.onModuleInit();
+      assert.ok(service.taskList.hello);
 
-      const middleware1 = async (payload: any, helpers: any, next: any) => {
-        executionOrder.push('middleware1');
-        await next();
-      };
+      const payload: any = { test: true };
+      const helpers: any = {};
 
-      const middleware2 = async (payload: any, helpers: any, next: any) => {
-        executionOrder.push('middleware2');
-        await next();
-      };
+      await service.taskList.hello(payload, helpers);
 
-      const moduleWithMiddlewares = await createTestingModule([
-        middleware1,
-        middleware2,
-      ]);
-      const serviceWithMiddlewares =
-        moduleWithMiddlewares.get(TaskExplorerService);
-      serviceWithMiddlewares.onModuleInit();
-
-      assert.ok(serviceWithMiddlewares.taskList.hello);
-
-      await serviceWithMiddlewares.taskList.hello({}, {} as any);
-
-      assert.deepStrictEqual(executionOrder, ['middleware1', 'middleware2']);
+      assert.strictEqual(payload.middlewareApplied, true);
     });
   });
 });

@@ -1,8 +1,18 @@
-import { Injectable, Type } from "@nestjs/common";
-import { Reflector } from "@nestjs/core";
-import { TASK_HANDLER_METADATA, TASK_METADATA } from "../decorators/task.decorators";
-import { WORKER_LISTENER_METADATA, WORKER_ON_EVENT_METADATA } from "../decorators/worker.decorators";
-import { WorkerEventName } from "../interfaces/worker.interfaces";
+import { Injectable, Type } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import {
+  MIDDLEWARE_METADATA,
+  MiddlewareOptions,
+} from '../decorators/middleware.decorators';
+import {
+  TASK_HANDLER_METADATA,
+  TASK_METADATA,
+} from '../decorators/task.decorators';
+import {
+  WORKER_LISTENER_METADATA,
+  WORKER_ON_EVENT_METADATA,
+} from '../decorators/worker.decorators';
+import { WorkerEventName } from '../interfaces/worker.interfaces';
 
 /**
  * Heavily inspired from [`BullMetadataAccessor`](https://github.com/nestjs/bull/blob/c230eab1dc26fb743a3428e61043167866b1e377/lib/bull-metadata.accessor.ts)
@@ -37,6 +47,18 @@ export class MetadataAccessorService {
 
   getTaskMetadata(target: Type | Function): string | undefined {
     return this.reflector.get(TASK_METADATA, target);
+  }
+
+  // MIDDLEWARE DECORATOR
+
+  isMiddleware(target: Type | Function): boolean {
+    return this.hasMetadata(MIDDLEWARE_METADATA, target);
+  }
+
+  getMiddlewareMetadata(
+    target: Type | Function,
+  ): MiddlewareOptions | undefined {
+    return this.reflector.get(MIDDLEWARE_METADATA, target);
   }
 
   private hasMetadata(key: Symbol, target: Type | Function): boolean {
