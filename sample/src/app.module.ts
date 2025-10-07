@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { GraphileWorkerModule } from '../../src/index';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { BypassGlobalMiddlewareTask } from './bypass-global-middleware.task';
 import { HelloTask } from './hello.task';
 import { MiddlewareExampleTask } from './middleware-example.task';
 import {
@@ -24,6 +25,7 @@ import {
     AppService,
     HelloTask,
     MiddlewareExampleTask,
+    BypassGlobalMiddlewareTask,
     Global1Middleware,
     Global2Middleware,
     Local1Middleware,

@@ -250,7 +250,11 @@ For your middleware to automatically apply to all jobs, you can define it as a g
 `global: true` option (`@Middleware('myMiddlewareId', { global: true })`).
 
 For those middlewares that are not defined as global, you have to annotate the specific task handlers the middlewares
-should apply to, by usnig the decorator `@UseMiddlewares(['myLocalMiddleware'])`.
+should apply to, by using the decorator `@UseMiddlewares(['myLocalMiddleware'])`.
+
+You can also bypass specific global middlewares for individual handlers using the `bypassGlobalMiddlewares` option:
+`@UseMiddlewares(['myLocalMiddleware'], { bypassGlobalMiddlewares: ['myGlobalMiddleware'] })`. This provides maximum
+flexibility for controlling middleware execution on a per-handler basis if needed.
 
 Here is an example:
 
@@ -301,9 +305,30 @@ export class GracefulLastAttemptFailureMiddleware implements MiddlewareProvider 
 export class MyTask  {
 
   @UseMiddlewares(['myLocalMiddleware'])
-  @TaskHander()
-  async hander(payload: any, helpers: JobHelpers) {
+  @TaskHandler()
+  async handler(payload: any, helpers: JobHelpers) {
     // do something
+  }
+
+  // Bypass specific global middlewares for this handler
+  @UseMiddlewares(
+    ['myLocalMiddleware'], 
+    { bypassGlobalMiddlewares: ['myGlobalMiddleware'] }
+  )
+  @TaskHandler()
+  async handlerWithBypass(payload: any, helpers: JobHelpers) {
+    // This handler will skip 'myGlobalMiddleware' but still use 'myLocalMiddleware'
+  }
+
+  // Trick: bypass a global middleware but use it in the array of handler-specific middlewares to control execution order
+  @UseMiddlewares(
+    ['myLocalMiddleware', 'myGlobalMiddleware'], 
+    { bypassGlobalMiddlewares: ['myGlobalMiddleware'] }
+  )
+  @TaskHandler()
+  async handlerWithBypass(payload: any, helpers: JobHelpers) {
+    // Bypasses `myGlobalMiddleware` but includes it locally to control execution order: while global middlewares
+    // execute before local handlers, here `myGlobalMiddleware` gets executed as a local handler after `myLocalMiddleware`
   }
 }
 

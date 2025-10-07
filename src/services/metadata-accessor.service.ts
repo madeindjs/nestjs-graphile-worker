@@ -4,6 +4,7 @@ import {
   MIDDLEWARE_METADATA,
   MiddlewareMetadata,
   USE_MIDDLEWARE_METADATA,
+  UseMiddlewaresMetadata,
 } from '../decorators/middleware.decorators';
 import {
   TASK_HANDLER_METADATA,
@@ -50,7 +51,9 @@ export class MetadataAccessorService {
     return this.reflector.get(TASK_METADATA, target);
   }
 
-  getHandlerMiddlewareMetadata(target: Type | Function): string[] | undefined {
+  getHandlerMiddlewareMetadata(
+    target: Type | Function,
+  ): UseMiddlewaresMetadata | undefined {
     return this.reflector.get(USE_MIDDLEWARE_METADATA, target);
   }
 

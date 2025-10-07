@@ -45,6 +45,12 @@ class TestTaskService {
   @TaskHandler()
   handlerWithMiddleware() {}
 
+  @UseMiddlewares(['local1'], {
+    bypassGlobalMiddlewares: ['global1', 'global2'],
+  })
+  @TaskHandler()
+  handlerWithBypass() {}
+
   notHandler() {}
 }
 
@@ -216,7 +222,10 @@ describe(MetadataAccessorService.name, () => {
         const metadata = service.getHandlerMiddlewareMetadata(
           testTask.handlerWithMiddleware,
         );
-        assert.deepStrictEqual(metadata, ['middleware1', 'middleware2']);
+        assert.deepStrictEqual(metadata, {
+          middlewareIds: ['middleware1', 'middleware2'],
+          options: undefined,
+        });
       });
 
       it('should return undefined for handlers without middleware decorator', () => {
@@ -229,6 +238,18 @@ describe(MetadataAccessorService.name, () => {
           testTask.notHandler,
         );
         assert.strictEqual(metadata, undefined);
+      });
+
+      it('should get handler middleware metadata with bypass options', () => {
+        const metadata = service.getHandlerMiddlewareMetadata(
+          testTask.handlerWithBypass,
+        );
+        assert.deepStrictEqual(metadata, {
+          middlewareIds: ['local1'],
+          options: {
+            bypassGlobalMiddlewares: ['global1', 'global2'],
+          },
+        });
       });
     });
   });

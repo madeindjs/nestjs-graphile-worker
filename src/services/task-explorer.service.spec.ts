@@ -61,6 +61,57 @@ class InstanceFieldTask {
   }
 }
 
+@Injectable()
+@Middleware('bypassedGlobal', { global: true })
+class BypassedGlobalMiddleware implements MiddlewareProvider {
+  async use(payload: any, _helpers: JobHelpers, next: Function) {
+    payload.bypassedGlobalApplied = true;
+    await next(payload);
+  }
+}
+
+@Injectable()
+@Middleware('anotherGlobal', { global: true })
+class AnotherGlobalMiddleware implements MiddlewareProvider {
+  async use(payload: any, _helpers: JobHelpers, next: Function) {
+    payload.anotherGlobalApplied = true;
+    await next(payload);
+  }
+}
+
+@Injectable()
+@Middleware('localMiddleware')
+class LocalMiddleware implements MiddlewareProvider {
+  async use(payload: any, _helpers: JobHelpers, next: Function) {
+    payload.localApplied = true;
+    await next(payload);
+  }
+}
+
+@Injectable()
+@Task('taskWithBypass')
+class TaskWithBypass {
+  @UseMiddlewares(['localMiddleware'], {
+    bypassGlobalMiddlewares: ['bypassedGlobal'],
+  })
+  @TaskHandler()
+  async handler(payload: any, _helpers: JobHelpers) {
+    payload.result = 'bypass-test';
+  }
+}
+
+@Injectable()
+@Task('taskWithNonExistentBypass')
+class TaskWithNonExistentBypass {
+  @UseMiddlewares(['localMiddleware'], {
+    bypassGlobalMiddlewares: ['nonExistentGlobal'],
+  })
+  @TaskHandler()
+  async handler(payload: any, _helpers: JobHelpers) {
+    payload.result = 'non-existent-bypass-test';
+  }
+}
+
 describe(TaskExplorerService.name, () => {
   let service: TaskExplorerService;
 
@@ -75,6 +126,11 @@ describe(TaskExplorerService.name, () => {
         HelloTask,
         InstanceFieldTask,
         TestMiddleware,
+        BypassedGlobalMiddleware,
+        AnotherGlobalMiddleware,
+        LocalMiddleware,
+        TaskWithBypass,
+        TaskWithNonExistentBypass,
         {
           provide: RUNNER_OPTIONS_KEY,
           useValue: {
@@ -156,6 +212,42 @@ describe(TaskExplorerService.name, () => {
       assert.strictEqual(payload.publicField, 'task-public-field');
       assert.strictEqual(payload.hasThisContext, true);
       assert.strictEqual(payload.test, 'data'); // Original payload data should still be there
+    });
+
+    it('should bypass specified global middlewares', async () => {
+      service.onModuleInit();
+      assert.ok(service.taskList.taskWithBypass);
+
+      const payload: any = { test: 'bypass-data' };
+      const helpers = {} as any;
+
+      await service.taskList.taskWithBypass(payload, helpers);
+
+      // Verify that the bypassed global middleware was not applied
+      assert.strictEqual(payload.bypassedGlobalApplied, undefined);
+      // Verify that other global middleware was still applied
+      assert.strictEqual(payload.anotherGlobalApplied, true);
+      // Verify that local middleware was applied
+      assert.strictEqual(payload.localApplied, true);
+      assert.strictEqual(payload.result, 'bypass-test');
+    });
+
+    it('should handle non-existent bypassed middlewares gracefully', async () => {
+      service.onModuleInit();
+      assert.ok(service.taskList.taskWithNonExistentBypass);
+
+      const payload: any = { test: 'non-existent-bypass-data' };
+      const helpers = {} as any;
+
+      // This should not throw an error even though 'nonExistentGlobal' doesn't exist
+      await service.taskList.taskWithNonExistentBypass(payload, helpers);
+
+      // Verify that existing global middlewares were still applied
+      assert.strictEqual(payload.bypassedGlobalApplied, true);
+      assert.strictEqual(payload.anotherGlobalApplied, true);
+      // Verify that local middleware was applied
+      assert.strictEqual(payload.localApplied, true);
+      assert.strictEqual(payload.result, 'non-existent-bypass-test');
     });
   });
 });

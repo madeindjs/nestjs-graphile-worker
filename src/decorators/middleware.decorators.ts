@@ -62,11 +62,33 @@ export function Middleware(
 }
 
 /**
+ * Options for the @UseMiddlewares decorator
+ */
+export interface UseMiddlewaresOptions {
+  /**
+   * Array of global middleware IDs to bypass for this specific handler.
+   * These middlewares will not be executed for this handler, even if they are global.
+   * If a bypassed middleware is also specified in the middlewareIds array, it will be executed from the latter array.
+   */
+  bypassGlobalMiddlewares?: string[];
+}
+
+/**
+ * Internal metadata interface for UseMiddlewares decorator
+ * @internal
+ */
+export interface UseMiddlewaresMetadata {
+  middlewareIds: string[];
+  options?: UseMiddlewaresOptions;
+}
+
+/**
  * Decorator to specify which handler-specific middlewares should be applied to a task handler.
  * Global middlewares are always applied first, followed by the specified handler middlewares.
  * Duplicate middlewares (if a global middleware is specified here) will be skipped.
  *
  * @param middlewareIds Array of middleware IDs to apply to this handler
+ * @param options Optional configuration for middleware handling
  *
  * @example
  * ```ts
@@ -78,9 +100,25 @@ export function Middleware(
  *   handler(payload: any, helpers: JobHelpers) {
  *     // handler logic
  *   }
+ *
+ *   @UseMiddlewares(
+ *     ['localMiddleware'],
+ *     { bypassGlobalMiddlewares: ['globalMiddleware'] }
+ *   )
+ *   @TaskHandler()
+ *   handlerWithBypass(payload: any, helpers: JobHelpers) {
+ *     // handler logic with bypassed global middleware
+ *   }
  * }
  * ```
  */
-export function UseMiddlewares(middlewareIds: string[]): MethodDecorator {
-  return SetMetadata(USE_MIDDLEWARE_METADATA, middlewareIds);
+export function UseMiddlewares(
+  middlewareIds: string[],
+  options?: UseMiddlewaresOptions,
+): MethodDecorator {
+  const metadata: UseMiddlewaresMetadata = {
+    middlewareIds,
+    options,
+  };
+  return SetMetadata(USE_MIDDLEWARE_METADATA, metadata);
 }

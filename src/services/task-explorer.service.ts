@@ -64,7 +64,6 @@ export class TaskExplorerService implements OnModuleInit {
         const { globalMiddlewares, handlerMiddlewares } = this.getMiddlewares(
           instance[methodName],
         );
-        // Combine middlewares: global first, then handler-specific
         const wrappedHandler = this.middlewareService.wrapTaskHandler(
           originalHandler,
           [...globalMiddlewares, ...handlerMiddlewares], // global first, then handler-specific
@@ -87,12 +86,19 @@ export class TaskExplorerService implements OnModuleInit {
     globalMiddlewares: JobMiddleware[];
     handlerMiddlewares: JobMiddleware[];
   } {
-    const globalMiddlewares = this.middlewareExplorerService.globalMiddlewares;
-
-    const handlerMiddlewareIds =
-      this.metadataAccessor.getHandlerMiddlewareMetadata(handlerMethod) || [];
+    const handlerMetadata =
+      this.metadataAccessor.getHandlerMiddlewareMetadata(handlerMethod);
+    const handlerMiddlewareIds = handlerMetadata?.middlewareIds || [];
     const handlerMiddlewares =
       this.middlewareExplorerService.getMiddlewaresByIds(handlerMiddlewareIds);
+
+    const allGlobalMiddlewares =
+      this.middlewareExplorerService.globalMiddlewares;
+    const bypassGlobalMiddlewares =
+      handlerMetadata?.options?.bypassGlobalMiddlewares || [];
+    const globalMiddlewares = allGlobalMiddlewares.filter(
+      (middleware) => !bypassGlobalMiddlewares.includes(middleware.name),
+    );
 
     return { globalMiddlewares, handlerMiddlewares };
   }
