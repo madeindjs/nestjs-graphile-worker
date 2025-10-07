@@ -240,10 +240,19 @@ recommended in the [Graphile Worker documentation](https://worker.graphile.org/d
 - **Rate limiting and throttling** - Prevent job execution under certain conditions
 
 The advantage of middlewares is that they execute **as part of the job execution flow**, giving you full control over
-the job's context and execution. 
+the job's context and execution.  
 In contrast, WorkerEvent listeners execute **as separate event handlers**, making them more suitable for side effects (like notifications or monitoring) but not for controlling or modifying job execution itself.
 
-You can create global job middlewares using the `@Middleware({ global: true })` decorator that will be applied to all jobs:
+#### Usage
+
+To create a middleware, you should define a classe with the decorator `@Middleware('myUniqueMiddlewareId')`.
+For your middleware to automatically apply to all jobs, you can define it as a global middleware by using the
+`global: true` option (`@Middleware('myMiddlewareId', { global: true })`).
+
+For those middlewares that are not defined as global, you have to annotate the specific task handlers the middlewares
+should apply to, by usnig the decorator `@UseMiddlewares(['myLocalMiddleware'])`.
+
+Here is an example:
 
 ```ts
 import { Injectable } from "@nestjs/common";
@@ -251,7 +260,7 @@ import { Middleware, MiddlewareProvider } from "nestjs-graphile-worker";
 import { JobHelpers } from "graphile-worker";
 
 @Injectable()
-@Middleware({ global: true })
+@Middleware('myGlobalMiddleware', { global: true })
 export class ContextMiddleware implements MiddlewareProvider {
   async use(payload: any, helpers: JobHelpers, next: Function) {
     // Add job execution context that handlers can use
@@ -269,7 +278,7 @@ export class ContextMiddleware implements MiddlewareProvider {
 }
 
 @Injectable()
-@Middleware({ global: true })
+@Middleware('myLocalMiddleware')
 export class GracefulLastAttemptFailureMiddleware implements MiddlewareProvider {
   async use(payload: any, helpers: JobHelpers, next: Function) {
     try {
@@ -284,6 +293,17 @@ export class GracefulLastAttemptFailureMiddleware implements MiddlewareProvider 
       logger.error(`Permanently failed to handle task ${job.task_identifier}`, { payload });
       instrumentation.onJobFailedWithGracefulExit(job.task_identifier); // some instrumentation util for monitoring
     }
+  }
+}
+
+@Injectable()
+@Task('myTask')
+export class MyTask  {
+
+  @UseMiddlewares(['myLocalMiddleware'])
+  @TaskHander()
+  async hander(payload: any, helpers: JobHelpers) {
+    // do something
   }
 }
 
@@ -305,15 +325,16 @@ export class AppModule {}
 
 #### Middleware execution order
 
+Global middlewares are always executed first, then handler-specific middlewares.
+
 **Important**: Global middleware execution order is determined by the order in which they are declared in the `providers` 
 array. Middlewares execute in the same order they appear in the array.
 
 ```ts
 @Module({
   providers: [
-    FirstMiddleware,    // Executes first
-    SecondMiddleware,   // Executes second  
-    ThirdMiddleware,    // Executes third
+    FirstGlobalMiddleware,    // Executes first
+    SecondGlobalMiddleware,   // Executes second  
     // ... other providers
   ],
 })
@@ -325,7 +346,8 @@ export class AppModule {}
 > Take care of handling errors appropriately in your middleware.  
 > Also keep your middleware lightweight and avoid heavy computations.
 
-1. **Middleware not executing**: Ensure the middleware class is decorated with `@Middleware({ global: true })` and registered as a provider in your module.
+1. **Middleware not executing**: Ensure the middleware class is decorated with `@Middleware()` and registered as a
+provider in your module.
 
 2. **Tasks hanging**: Make sure every middleware calls `next()` or throws an error.
 

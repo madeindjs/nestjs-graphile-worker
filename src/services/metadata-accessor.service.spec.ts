@@ -5,7 +5,10 @@ import { JobHelpers } from 'graphile-worker';
 import * as assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 
-import { Middleware } from '../decorators/middleware.decorators';
+import {
+  Middleware,
+  UseMiddlewares,
+} from '../decorators/middleware.decorators';
 import { Task, TaskHandler } from '../decorators/task.decorators';
 import {
   GraphileWorkerListener,
@@ -38,11 +41,15 @@ class TestTaskService {
   @TaskHandler()
   handler() {}
 
+  @UseMiddlewares(['middleware1', 'middleware2'])
+  @TaskHandler()
+  handlerWithMiddleware() {}
+
   notHandler() {}
 }
 
 @Injectable()
-@Middleware({ global: true })
+@Middleware('globalMiddleware', { global: true })
 class TestGlobalMiddleware implements MiddlewareProvider {
   async use(
     payload: any,
@@ -54,7 +61,7 @@ class TestGlobalMiddleware implements MiddlewareProvider {
 }
 
 @Injectable()
-@Middleware()
+@Middleware('handlerMiddleware')
 class TestMiddleware implements MiddlewareProvider {
   async use(
     payload: any,
@@ -108,15 +115,12 @@ describe(MetadataAccessorService.name, () => {
   });
 
   describe('isListener', () => {
-    it.skip('should get valid', () => {
-      assert.ok(service.isListener(testListener.onJobSuccess));
-      assert.ok(service.isListener(testListener.onJobError));
+    it('should get valid', () => {
+      assert.ok(service.isListener(TestListenerService));
     });
 
     it('should get invalid', () => {
-      assert.equal(service.isListener(testListener.notListener), false);
-      assert.equal(service.isListener(testNotListener.onJobSuccess), false);
-      assert.equal(service.isListener(testNotListener.onJobError), false);
+      assert.equal(service.isListener(TestNotListenerService), false);
     });
   });
 
@@ -206,6 +210,27 @@ describe(MetadataAccessorService.name, () => {
         );
       });
     });
+
+    describe('getHandlerMiddlewareMetadata', () => {
+      it('should get handler middleware metadata', () => {
+        const metadata = service.getHandlerMiddlewareMetadata(
+          testTask.handlerWithMiddleware,
+        );
+        assert.deepStrictEqual(metadata, ['middleware1', 'middleware2']);
+      });
+
+      it('should return undefined for handlers without middleware decorator', () => {
+        const metadata = service.getHandlerMiddlewareMetadata(testTask.handler);
+        assert.strictEqual(metadata, undefined);
+      });
+
+      it('should return undefined for non-handler methods', () => {
+        const metadata = service.getHandlerMiddlewareMetadata(
+          testTask.notHandler,
+        );
+        assert.strictEqual(metadata, undefined);
+      });
+    });
   });
 
   describe('Middleware decorators', () => {
@@ -224,12 +249,15 @@ describe(MetadataAccessorService.name, () => {
     describe('getMiddlewareMetadata', () => {
       it('should get global middleware metadata', () => {
         const metadata = service.getMiddlewareMetadata(TestGlobalMiddleware);
-        assert.deepStrictEqual(metadata, { global: true });
+        assert.deepStrictEqual(metadata, {
+          id: 'globalMiddleware',
+          global: true,
+        });
       });
 
       it('should get regular middleware metadata', () => {
         const metadata = service.getMiddlewareMetadata(TestMiddleware);
-        assert.deepStrictEqual(metadata, {});
+        assert.deepStrictEqual(metadata, { id: 'handlerMiddleware' });
       });
 
       it('should return undefined for non-middleware classes', () => {

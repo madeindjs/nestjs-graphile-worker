@@ -7,7 +7,7 @@ const createMockHelpers = () =>
   ({
     addJob: mock.fn(),
     query: mock.fn(),
-    logger: { info: mock.fn(), error: mock.fn() },
+    logger: { info: mock.fn() },
   } as any);
 
 describe('MiddlewareService', () => {
@@ -15,6 +15,7 @@ describe('MiddlewareService', () => {
 
   beforeEach(() => {
     service = new MiddlewareService();
+    (service as any).logger = { error: mock.fn() };
   });
 
   describe('wrapTaskHandler', () => {

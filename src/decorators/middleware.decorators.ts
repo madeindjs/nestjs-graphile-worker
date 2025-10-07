@@ -2,38 +2,85 @@ import { SetMetadata } from '@nestjs/common';
 import { MiddlewareProvider } from '../interfaces/middleware.interfaces';
 
 export const MIDDLEWARE_METADATA = Symbol.for('MIDDLEWARE_METADATA');
+export const USE_MIDDLEWARE_METADATA = Symbol.for('USE_MIDDLEWARE_METADATA');
 
 export interface MiddlewareOptions {
   /**
-   * Whether this middleware should be applied globally to all tasks.
+   * Whether this middleware should be applied globally to all task handlers.
    * @default false
    */
   global?: boolean;
 }
 
 /**
+ * Internal interface for middleware metadata stored by the decorator
+ * @internal
+ */
+export interface MiddlewareMetadata extends MiddlewareOptions {
+  /**
+   * Unique identifier for the middleware
+   */
+  id: string;
+}
+
+/**
  * Marks a class as a job middleware.
  *
- * @param options Configuration options for the middleware
+ * @param id Unique identifier for the middleware (required)
+ * @param options Optional configuration for the middleware
  *
  * @example
  * ```ts
- * @Middleware({ global: true })
- * class GlobalLoggingMiddleware implements MiddlewareProvider {
+ * @Middleware('myGlobalMiddleware', { global: true })
+ * class MyGlobalMiddleware implements MiddlewareProvider {
  *   use(payload: any, helpers: JobHelpers, next: Function) {
- *     console.log('Processing job:', payload);
+ *     // middleware logic
+ *     return next();
+ *   }
+ * }
+ *
+ * @Middleware('myHandlerMiddleware')
+ * class MyHandlerMiddleware implements MiddlewareProvider {
+ *   use(payload: any, helpers: JobHelpers, next: Function) {
+ *     // middleware logic
  *     return next();
  *   }
  * }
  * ```
  */
 export function Middleware(
+  id: string,
   options: MiddlewareOptions = {},
 ): <T extends new (...args: any[]) => MiddlewareProvider>(target: T) => T {
   return <T extends new (...args: any[]) => MiddlewareProvider>(
     target: T,
   ): T => {
-    SetMetadata(MIDDLEWARE_METADATA, options)(target);
+    const metadata: MiddlewareMetadata = { id, ...options };
+    SetMetadata(MIDDLEWARE_METADATA, metadata)(target);
     return target;
   };
+}
+
+/**
+ * Decorator to specify which handler-specific middlewares should be applied to a task handler.
+ * Global middlewares are always applied first, followed by the specified handler middlewares.
+ * Duplicate middlewares (if a global middleware is specified here) will be skipped.
+ *
+ * @param middlewareIds Array of middleware IDs to apply to this handler
+ *
+ * @example
+ * ```ts
+ * @Injectable()
+ * @Task('myTask')
+ * export class MyTask {
+ *   @UseMiddlewares(['myMiddleware1', 'myMiddleware2'])
+ *   @TaskHandler()
+ *   handler(payload: any, helpers: JobHelpers) {
+ *     // handler logic
+ *   }
+ * }
+ * ```
+ */
+export function UseMiddlewares(middlewareIds: string[]): MethodDecorator {
+  return SetMetadata(USE_MIDDLEWARE_METADATA, middlewareIds);
 }

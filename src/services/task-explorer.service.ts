@@ -4,6 +4,7 @@ import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { MetadataScanner } from '@nestjs/core/metadata-scanner';
 import { TaskList } from 'graphile-worker';
 
+import { JobMiddleware } from '../interfaces/module-config.interfaces';
 import { MetadataAccessorService } from './metadata-accessor.service';
 import { MiddlewareExplorerService } from './middleware-explorer.service';
 import { MiddlewareService } from './middleware.service';
@@ -32,57 +33,97 @@ export class TaskExplorerService implements OnModuleInit {
   }
 
   explore() {
-    const providers: InstanceWrapper[] = this.discoveryService
+    const taskProviders: InstanceWrapper[] = this.discoveryService
       .getProviders()
       .filter((wrapper: InstanceWrapper) =>
         this.metadataAccessor.isTask(wrapper.metatype),
       );
 
-    providers.forEach((wrapper: InstanceWrapper) => {
-      const { instance } = wrapper;
+    for (const taskProvider of taskProviders) {
+      const { instance } = taskProvider;
 
-      this.metadataScanner.scanFromPrototype(
-        instance,
+      const methodNames = this.metadataScanner.getAllMethodNames(
         Object.getPrototypeOf(instance),
-        (key: string) => {
-          if (this.metadataAccessor.isTaskHandler(instance[key])) {
-            const name = this.metadataAccessor.getTaskMetadata(
-              wrapper.metatype,
-            );
-
-            if (name === undefined) return;
-
-            // Get the original handler
-            const originalHandler = (...args: any[]) => instance[key](...args);
-
-            // Get decorator-based global middlewares
-            const globalMiddlewares =
-              this.middlewareExplorerService.globalMiddlewares;
-
-            // Wrap the handler with middlewares
-            const wrappedHandler = this.middlewareService.wrapTaskHandler(
-              originalHandler,
-              globalMiddlewares,
-            );
-
-            this.taskList[name] = wrappedHandler;
-
-            const middlewareNames = globalMiddlewares
-              .map((mw) => mw.name || 'anonymous')
-              .join(', ');
-            const middlewareInfo =
-              globalMiddlewares.length > 0
-                ? `${globalMiddlewares.length} middleware(s): [${middlewareNames}]`
-                : 'no middlewares';
-
-            this.logger.debug(
-              `Register ${name} from ${
-                (instance as Object).constructor.name
-              }.${key} with ${middlewareInfo}`,
-            );
-          }
-        },
       );
-    });
+
+      for (const methodName of methodNames) {
+        if (!this.metadataAccessor.isTaskHandler(instance[methodName])) {
+          continue;
+        }
+
+        const taskName = this.metadataAccessor.getTaskMetadata(
+          taskProvider.metatype,
+        );
+
+        if (taskName === undefined) continue;
+
+        // Handle middlewares
+
+        const originalHandler = (...args: any[]) =>
+          instance[methodName](...args);
+        const { globalMiddlewares, handlerMiddlewares } = this.getMiddlewares(
+          instance[methodName],
+        );
+        // Combine middlewares: global first, then handler-specific
+        const wrappedHandler = this.middlewareService.wrapTaskHandler(
+          originalHandler,
+          [...globalMiddlewares, ...handlerMiddlewares], // global first, then handler-specific
+        );
+        this.taskList[taskName] = wrappedHandler;
+
+        this.logTaskRegistration(
+          taskName,
+          globalMiddlewares,
+          handlerMiddlewares,
+        );
+      }
+    }
+  }
+
+  /**
+   * Returns the global and handler-specific middlewares applicable to a handler method
+   */
+  private getMiddlewares(handlerMethod: Function): {
+    globalMiddlewares: JobMiddleware[];
+    handlerMiddlewares: JobMiddleware[];
+  } {
+    const globalMiddlewares = this.middlewareExplorerService.globalMiddlewares;
+
+    const handlerMiddlewareIds =
+      this.metadataAccessor.getHandlerMiddlewareMetadata(handlerMethod) || [];
+    const handlerMiddlewares =
+      this.middlewareExplorerService.getMiddlewaresByIds(handlerMiddlewareIds);
+
+    return { globalMiddlewares, handlerMiddlewares };
+  }
+
+  /**
+   * Logs task registration information with middleware details
+   */
+  private logTaskRegistration(
+    taskName: string,
+    globalMiddlewares: JobMiddleware[],
+    handlerMiddlewares: JobMiddleware[],
+  ) {
+    const logGlobalMiddlewareIds = this.middlewareExplorerService
+      .getMiddlewareIds(globalMiddlewares)
+      .join(', ');
+    const logHandlerMiddlewareIds = this.middlewareExplorerService
+      .getMiddlewareIds(handlerMiddlewares)
+      .join(', ');
+
+    const globalMiddlewareInfo =
+      globalMiddlewares.length > 0
+        ? `${globalMiddlewares.length} global middleware(s): [${logGlobalMiddlewareIds}]`
+        : 'no global middlewares';
+
+    const handlerMiddlewareInfo =
+      handlerMiddlewares.length > 0
+        ? `${handlerMiddlewares.length} handler middleware(s): [${logHandlerMiddlewareIds}]`
+        : 'no handler middlewares';
+
+    this.logger.debug(
+      `Registered task ${taskName} with ${globalMiddlewareInfo} and ${handlerMiddlewareInfo}`,
+    );
   }
 }

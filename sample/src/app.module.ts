@@ -2,9 +2,14 @@ import { Module } from '@nestjs/common';
 import { GraphileWorkerModule } from '../../src/index';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { CustomMiddleware } from './custom.middleware';
 import { HelloTask } from './hello.task';
 import { MiddlewareExampleTask } from './middleware-example.task';
+import {
+  Global1Middleware,
+  Global2Middleware,
+  Local1Middleware,
+  Local2Middleware,
+} from './middlewares';
 
 @Module({
   imports: [
@@ -15,6 +20,14 @@ import { MiddlewareExampleTask } from './middleware-example.task';
     }),
   ],
   controllers: [AppController],
-  providers: [AppService, HelloTask, MiddlewareExampleTask, CustomMiddleware],
+  providers: [
+    AppService,
+    HelloTask,
+    MiddlewareExampleTask,
+    Global1Middleware,
+    Global2Middleware,
+    Local1Middleware,
+    Local2Middleware,
+  ],
 })
 export class AppModule {}

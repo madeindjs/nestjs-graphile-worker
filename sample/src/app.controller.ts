@@ -26,6 +26,6 @@ export class AppController {
   @Post('middleware-example')
   @HttpCode(201)
   async addMiddlewareExampleJob() {
-    await this.graphileWorker.addJob('middleware-example', { test: 123 });
+    await this.graphileWorker.addJob('middleware-example');
   }
 }

@@ -43,9 +43,10 @@ export class MiddlewareService {
         try {
           await middleware(actualPayload, helpers, next);
         } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
           this.logger.error(
-            `Middleware execution failed at index ${currentIndex - 1}:`,
-            error,
+            `Middleware execution failed for '${middleware.name}': ${errorMessage}`,
           );
           throw error;
         }
