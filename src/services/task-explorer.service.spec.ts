@@ -26,18 +26,49 @@ class HelloTask {
 }
 
 @Injectable()
-@Middleware('testMiddleware', { global: true })
-class TestMiddleware implements MiddlewareProvider {
+@Middleware({ global: true })
+class GlobalMiddleware implements MiddlewareProvider {
   async use(payload: any, _helpers: JobHelpers, next: Function) {
-    payload.middlewareApplied = true;
+    payload.globalMiddlewareApplied = true;
     await next(payload);
   }
 }
 
 @Injectable()
+@Middleware({ global: true })
+class AnotherGlobalMiddleware implements MiddlewareProvider {
+  async use(payload: any, _helpers: JobHelpers, next: Function) {
+    payload.anotherGlobalMiddlewareApplied = true;
+    await next(payload);
+  }
+}
+
+@Injectable()
+@Middleware({ global: true })
+class BypassedGlobalMiddleware implements MiddlewareProvider {
+  async use(payload: any, _helpers: JobHelpers, next: Function) {
+    payload.bypassedGlobalApplied = true;
+    await next(payload);
+  }
+}
+
+@Injectable()
+@Middleware()
+class LocalMiddleware implements MiddlewareProvider {
+  async use(payload: any, _helpers: JobHelpers, next: Function) {
+    payload.localApplied = true;
+    await next(payload);
+  }
+}
+
+class NonExistentMiddleware implements MiddlewareProvider {
+  async use() {}
+}
+
+@Injectable()
 @Task('taskWithMissingMiddleware')
 class TaskWithMissingMiddleware {
-  @UseMiddlewares(['nonExistentMiddleware'])
+  @UseMiddlewares([NonExistentMiddleware])
   @TaskHandler()
   async handler() {
     return 'should not be reached';
@@ -62,37 +93,10 @@ class InstanceFieldTask {
 }
 
 @Injectable()
-@Middleware('bypassedGlobal', { global: true })
-class BypassedGlobalMiddleware implements MiddlewareProvider {
-  async use(payload: any, _helpers: JobHelpers, next: Function) {
-    payload.bypassedGlobalApplied = true;
-    await next(payload);
-  }
-}
-
-@Injectable()
-@Middleware('anotherGlobal', { global: true })
-class AnotherGlobalMiddleware implements MiddlewareProvider {
-  async use(payload: any, _helpers: JobHelpers, next: Function) {
-    payload.anotherGlobalApplied = true;
-    await next(payload);
-  }
-}
-
-@Injectable()
-@Middleware('localMiddleware')
-class LocalMiddleware implements MiddlewareProvider {
-  async use(payload: any, _helpers: JobHelpers, next: Function) {
-    payload.localApplied = true;
-    await next(payload);
-  }
-}
-
-@Injectable()
 @Task('taskWithBypass')
 class TaskWithBypass {
-  @UseMiddlewares(['localMiddleware'], {
-    bypassGlobalMiddlewares: ['bypassedGlobal'],
+  @UseMiddlewares([LocalMiddleware], {
+    bypassGlobalMiddlewares: [BypassedGlobalMiddleware],
   })
   @TaskHandler()
   async handler(payload: any, _helpers: JobHelpers) {
@@ -100,11 +104,15 @@ class TaskWithBypass {
   }
 }
 
+class NonExistentGlobal implements MiddlewareProvider {
+  async use() {}
+}
+
 @Injectable()
 @Task('taskWithNonExistentBypass')
 class TaskWithNonExistentBypass {
-  @UseMiddlewares(['localMiddleware'], {
-    bypassGlobalMiddlewares: ['nonExistentGlobal'],
+  @UseMiddlewares([LocalMiddleware], {
+    bypassGlobalMiddlewares: [NonExistentGlobal],
   })
   @TaskHandler()
   async handler(payload: any, _helpers: JobHelpers) {
@@ -125,7 +133,7 @@ describe(TaskExplorerService.name, () => {
         MiddlewareService,
         HelloTask,
         InstanceFieldTask,
-        TestMiddleware,
+        GlobalMiddleware,
         BypassedGlobalMiddleware,
         AnotherGlobalMiddleware,
         LocalMiddleware,
@@ -168,7 +176,7 @@ describe(TaskExplorerService.name, () => {
 
       await service.taskList.hello(payload, helpers);
 
-      assert.strictEqual(payload.middlewareApplied, true);
+      assert.strictEqual(payload.globalMiddlewareApplied, true);
     });
 
     it('should throw error when task references non-existent middleware', async () => {
@@ -192,7 +200,8 @@ describe(TaskExplorerService.name, () => {
         },
         {
           name: 'Error',
-          message: /Middleware\(s\) not found: \[nonExistentMiddleware\]/,
+          message:
+            /Middleware class\(es\) not found: \[NonExistentMiddleware\]/,
         },
       );
     });
@@ -226,7 +235,7 @@ describe(TaskExplorerService.name, () => {
       // Verify that the bypassed global middleware was not applied
       assert.strictEqual(payload.bypassedGlobalApplied, undefined);
       // Verify that other global middleware was still applied
-      assert.strictEqual(payload.anotherGlobalApplied, true);
+      assert.strictEqual(payload.anotherGlobalMiddlewareApplied, true);
       // Verify that local middleware was applied
       assert.strictEqual(payload.localApplied, true);
       assert.strictEqual(payload.result, 'bypass-test');
@@ -244,7 +253,7 @@ describe(TaskExplorerService.name, () => {
 
       // Verify that existing global middlewares were still applied
       assert.strictEqual(payload.bypassedGlobalApplied, true);
-      assert.strictEqual(payload.anotherGlobalApplied, true);
+      assert.strictEqual(payload.anotherGlobalMiddlewareApplied, true);
       // Verify that local middleware was applied
       assert.strictEqual(payload.localApplied, true);
       assert.strictEqual(payload.result, 'non-existent-bypass-test');

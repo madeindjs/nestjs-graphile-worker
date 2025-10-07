@@ -3,7 +3,7 @@ import { JobHelpers } from 'graphile-worker';
 import { Middleware, MiddlewareProvider } from '../../../src/index';
 
 @Injectable()
-@Middleware('global2', { global: true })
+@Middleware({ global: true })
 export class Global2Middleware implements MiddlewareProvider {
   async use(
     payload: any,

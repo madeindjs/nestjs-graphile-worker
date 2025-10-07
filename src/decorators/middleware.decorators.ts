@@ -13,49 +13,39 @@ export interface MiddlewareOptions {
 }
 
 /**
- * Internal interface for middleware metadata stored by the decorator
- * @internal
+ * Represents a middleware class constructor
  */
-export interface MiddlewareMetadata extends MiddlewareOptions {
-  /**
-   * Unique identifier for the middleware
-   */
-  id: string;
-}
+export type MiddlewareClass = new (...args: any[]) => MiddlewareProvider;
 
 /**
  * Marks a class as a job middleware.
  *
- * @param id Unique identifier for the middleware (required)
  * @param options Optional configuration for the middleware
  *
  * @example
  * ```ts
- * @Middleware('myGlobalMiddleware', { global: true })
+ * @Middleware({ global: true })
  * class MyGlobalMiddleware implements MiddlewareProvider {
  *   use(payload: any, helpers: JobHelpers, next: Function) {
  *     // middleware logic
- *     return next();
+ *     return next(payload);
  *   }
  * }
  *
- * @Middleware('myHandlerMiddleware')
+ * @Middleware()
  * class MyHandlerMiddleware implements MiddlewareProvider {
  *   use(payload: any, helpers: JobHelpers, next: Function) {
  *     // middleware logic
- *     return next();
+ *     return next(payload);
  *   }
  * }
  * ```
  */
 export function Middleware(
-  id: string,
   options: MiddlewareOptions = {},
-): <T extends new (...args: any[]) => MiddlewareProvider>(target: T) => T {
-  return <T extends new (...args: any[]) => MiddlewareProvider>(
-    target: T,
-  ): T => {
-    const metadata: MiddlewareMetadata = { id, ...options };
+): <T extends MiddlewareClass>(target: T) => T {
+  return <T extends MiddlewareClass>(target: T): T => {
+    const metadata: MiddlewareOptions = { ...options };
     SetMetadata(MIDDLEWARE_METADATA, metadata)(target);
     return target;
   };
@@ -66,11 +56,11 @@ export function Middleware(
  */
 export interface UseMiddlewaresOptions {
   /**
-   * Array of global middleware IDs to bypass for this specific handler.
+   * Array of global middleware classes to bypass for this specific handler.
    * These middlewares will not be executed for this handler, even if they are global.
-   * If a bypassed middleware is also specified in the middlewareIds array, it will be executed from the latter array.
+   * If a bypassed middleware is also specified in the middlewares array, it will be executed from the latter array.
    */
-  bypassGlobalMiddlewares?: string[];
+  bypassGlobalMiddlewares?: MiddlewareClass[];
 }
 
 /**
@@ -78,7 +68,7 @@ export interface UseMiddlewaresOptions {
  * @internal
  */
 export interface UseMiddlewaresMetadata {
-  middlewareIds: string[];
+  middlewareClasses: MiddlewareClass[];
   options?: UseMiddlewaresOptions;
 }
 
@@ -87,7 +77,7 @@ export interface UseMiddlewaresMetadata {
  * Global middlewares are always applied first, followed by the specified handler middlewares.
  * Duplicate middlewares (if a global middleware is specified here) will be skipped.
  *
- * @param middlewareIds Array of middleware IDs to apply to this handler
+ * @param middlewareClasses Array of middleware classes to apply to this handler
  * @param options Optional configuration for middleware handling
  *
  * @example
@@ -95,15 +85,15 @@ export interface UseMiddlewaresMetadata {
  * @Injectable()
  * @Task('myTask')
  * export class MyTask {
- *   @UseMiddlewares(['myMiddleware1', 'myMiddleware2'])
+ *   @UseMiddlewares([MyMiddleware1, MyMiddleware2])
  *   @TaskHandler()
  *   handler(payload: any, helpers: JobHelpers) {
  *     // handler logic
  *   }
  *
  *   @UseMiddlewares(
- *     ['localMiddleware'],
- *     { bypassGlobalMiddlewares: ['globalMiddleware'] }
+ *     [LocalMiddleware],
+ *     { bypassGlobalMiddlewares: [GlobalMiddleware] }
  *   )
  *   @TaskHandler()
  *   handlerWithBypass(payload: any, helpers: JobHelpers) {
@@ -113,11 +103,11 @@ export interface UseMiddlewaresMetadata {
  * ```
  */
 export function UseMiddlewares(
-  middlewareIds: string[],
+  middlewareClasses: MiddlewareClass[],
   options?: UseMiddlewaresOptions,
 ): MethodDecorator {
   const metadata: UseMiddlewaresMetadata = {
-    middlewareIds,
+    middlewareClasses,
     options,
   };
   return SetMetadata(USE_MIDDLEWARE_METADATA, metadata);

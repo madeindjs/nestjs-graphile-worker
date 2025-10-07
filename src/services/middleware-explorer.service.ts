@@ -1,8 +1,8 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Type } from '@nestjs/common';
 import { DiscoveryService } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 
-import { MiddlewareMetadata } from '../decorators/middleware.decorators';
+import { MiddlewareClass } from '../decorators/middleware.decorators';
 import { JobMiddleware } from '../interfaces/module-config.interfaces';
 import { MiddlewareProvider } from '../interfaces/middleware.interfaces';
 import { MetadataAccessorService } from './metadata-accessor.service';
@@ -15,7 +15,7 @@ export class MiddlewareExplorerService implements OnModuleInit {
   private readonly logger = new Logger(MiddlewareExplorerService.name);
 
   private readonly _middlewares = new Map<
-    string,
+    Type,
     { middlewareFn: JobMiddleware; isGlobal: boolean }
   >();
   private _explored = false;
@@ -30,68 +30,49 @@ export class MiddlewareExplorerService implements OnModuleInit {
   }
 
   /**
-   * Get all global middlewares discovered from decorated classes
+   * Get all global middleware classes
    */
-  get globalMiddlewares(): JobMiddleware[] {
+  get globalMiddlewareClasses(): MiddlewareClass[] {
     // Ensure exploration has happened
     if (!this._explored) {
       this.explore();
     }
-    return Array.from(this._middlewares.values())
-      .filter(({ isGlobal }) => isGlobal)
-      .map(({ middlewareFn }) => middlewareFn);
+    return Array.from(this._middlewares.entries())
+      .filter(([, { isGlobal }]) => isGlobal)
+      .map(([middlewareClass]) => middlewareClass);
   }
 
   /**
-   * Get all registered middleware IDs
+   * Get multiple middlewares by their classes
+   * @throws Error if any middleware class is not found
    */
-  get registeredMiddlewareIds(): string[] {
-    // Ensure exploration has happened
-    if (!this._explored) {
-      this.explore();
-    }
-    return Array.from(this._middlewares.keys());
-  }
-
-  /**
-   * Get a middleware by its ID
-   */
-  getMiddlewareById(id: string): JobMiddleware | undefined {
-    // Ensure exploration has happened
-    if (!this._explored) {
-      this.explore();
-    }
-    return this._middlewares.get(id)?.middlewareFn;
-  }
-
-  /**
-   * Get multiple middlewares by their IDs
-   * @throws Error if any middleware ID is not found
-   */
-  getMiddlewaresByIds(ids: string[]): JobMiddleware[] {
+  getMiddlewaresByClasses(
+    middlewareClasses: MiddlewareClass[],
+  ): JobMiddleware[] {
     // Ensure exploration has happened
     if (!this._explored) {
       this.explore();
     }
 
     // Check for missing middlewares
-    const missingIds = ids.filter((id) => !this._middlewares.has(id));
+    const missingClasses = middlewareClasses.filter(
+      (cls) => !this._middlewares.has(cls),
+    );
 
-    if (missingIds.length > 0) {
+    if (missingClasses.length > 0) {
+      const missingNames = missingClasses.map((cls) => cls.name).join(', ');
+      const availableNames = Array.from(this._middlewares.keys())
+        .map((cls) => cls.name)
+        .join(', ');
       throw new Error(
-        `Middleware(s) not found: [${missingIds.join(', ')}]. 
-        Available middlewares: [${this.registeredMiddlewareIds.join(', ')}]`,
+        `Middleware class(es) not found: [${missingNames}]. 
+        Available middleware classes: [${availableNames}]`,
       );
     }
 
-    return ids.map((id) => this._middlewares.get(id)!.middlewareFn);
-  }
-
-  /**
-   * Get the IDs of multiple middlewares
-   */
-  getMiddlewareIds(middlewares: JobMiddleware[]): string[] {
-    return middlewares.map((middleware) => middleware.name);
+    return middlewareClasses.map((cls) => {
+      return this._middlewares.get(cls)!.middlewareFn;
+    });
   }
 
   private explore() {
@@ -110,9 +91,7 @@ export class MiddlewareExplorerService implements OnModuleInit {
 
       const { instance, metatype } = provider;
 
-      const options = this.metadataAccessor.getMiddlewareMetadata(metatype);
-
-      if (!this.isValidMiddleware(instance, options, metatype)) {
+      if (!this.isValidMiddleware(instance, metatype)) {
         throw new Error(
           `Middleware ${metatype?.name || 'Unknown'} is not valid`,
         );
@@ -120,49 +99,26 @@ export class MiddlewareExplorerService implements OnModuleInit {
 
       const middlewareFunction = this.getMiddlewareFunction(
         instance,
-        options.id,
+        metatype.name,
       );
+      const options = this.metadataAccessor.getMiddlewareMetadata(metatype);
 
-      this._middlewares.set(options.id, {
+      this._middlewares.set(metatype as Type, {
         middlewareFn: middlewareFunction,
-        isGlobal: options.global || false,
+        isGlobal: options?.global || false,
       });
     }
 
     this.logMiddlewareRegistration();
   }
 
-  private isValidMiddleware(
-    instance: any,
-    options: MiddlewareMetadata | undefined,
-    metatype: any,
-  ): options is MiddlewareMetadata {
-    // Check if options exist and have an ID
-    if (!options?.id) {
-      this.logger.error(
-        `Middleware class ${
-          metatype?.name || 'Unknown'
-        } does not have an ID. All middlewares must have a unique ID.`,
-      );
-      return false;
-    }
-
-    // Check for duplicate IDs
-    if (this._middlewares.has(options.id)) {
-      this.logger.error(
-        `Duplicate middleware ID '${
-          options.id
-        }' detected. Middleware IDs must be unique across the entire application. Found in class: ${
-          metatype?.name || 'Unknown'
-        }`,
-      );
-      return false;
-    }
-
+  private isValidMiddleware(instance: any, metatype: any): boolean {
     // Check if instance has a valid use method
     if (!instance || typeof instance.use !== 'function') {
       this.logger.error(
-        `Middleware '${options.id}' does not implement the 'use' method correctly. \
+        `Middleware '${
+          metatype?.name || 'Unknown'
+        }' does not implement the 'use' method correctly. \
         All middlewares must have a valid 'use' method with exactly 3 parameters: (payload, helpers, next).`,
       );
       return false;
@@ -218,20 +174,20 @@ export class MiddlewareExplorerService implements OnModuleInit {
       return;
     }
 
-    // Log all middlewares
-    const middlewareIds = Array.from(this._middlewares.keys()).join(', ');
+    const middlewareNames = Array.from(this._middlewares.keys())
+      .map((cls) => cls.name)
+      .join(', ');
     this.logger.debug(
-      `Registered ${this._middlewares.size} middlewares: [${middlewareIds}]`,
+      `Registered ${this._middlewares.size} middlewares: [${middlewareNames}]`,
     );
 
-    // Log global middlewares if any
-    const globalMiddlewareIds = Array.from(this._middlewares.entries())
+    const globalMiddlewareNames = Array.from(this._middlewares.entries())
       .filter(([, { isGlobal }]) => isGlobal)
-      .map(([id]) => id);
+      .map(([cls]) => cls.name);
 
-    if (globalMiddlewareIds.length > 0) {
+    if (globalMiddlewareNames.length > 0) {
       this.logger.debug(
-        `The following middlewares are global: [${globalMiddlewareIds.join(
+        `The following middlewares are global: [${globalMiddlewareNames.join(
           ', ',
         )}]`,
       );

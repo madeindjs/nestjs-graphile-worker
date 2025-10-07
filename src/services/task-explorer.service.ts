@@ -1,9 +1,10 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Type } from '@nestjs/common';
 import { DiscoveryService } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { MetadataScanner } from '@nestjs/core/metadata-scanner';
 import { TaskList } from 'graphile-worker';
 
+import { MiddlewareClass } from '../decorators/middleware.decorators';
 import { JobMiddleware } from '../interfaces/module-config.interfaces';
 import { MetadataAccessorService } from './metadata-accessor.service';
 import { MiddlewareExplorerService } from './middleware-explorer.service';
@@ -88,17 +89,24 @@ export class TaskExplorerService implements OnModuleInit {
   } {
     const handlerMetadata =
       this.metadataAccessor.getHandlerMiddlewareMetadata(handlerMethod);
-    const handlerMiddlewareIds = handlerMetadata?.middlewareIds || [];
+    const handlerMiddlewareClasses = handlerMetadata?.middlewareClasses || [];
     const handlerMiddlewares =
-      this.middlewareExplorerService.getMiddlewaresByIds(handlerMiddlewareIds);
+      this.middlewareExplorerService.getMiddlewaresByClasses(
+        handlerMiddlewareClasses,
+      );
 
-    const allGlobalMiddlewares =
-      this.middlewareExplorerService.globalMiddlewares;
-    const bypassGlobalMiddlewares =
+    const allGlobalMiddlewareClasses =
+      this.middlewareExplorerService.globalMiddlewareClasses;
+    const bypassGlobalMiddlewareClasses =
       handlerMetadata?.options?.bypassGlobalMiddlewares || [];
-    const globalMiddlewares = allGlobalMiddlewares.filter(
-      (middleware) => !bypassGlobalMiddlewares.includes(middleware.name),
+    const filteredGlobalMiddlewareClasses = allGlobalMiddlewareClasses.filter(
+      (middlewareClass: MiddlewareClass) =>
+        !bypassGlobalMiddlewareClasses.includes(middlewareClass),
     );
+    const globalMiddlewares =
+      this.middlewareExplorerService.getMiddlewaresByClasses(
+        filteredGlobalMiddlewareClasses,
+      );
 
     return { globalMiddlewares, handlerMiddlewares };
   }
@@ -111,11 +119,11 @@ export class TaskExplorerService implements OnModuleInit {
     globalMiddlewares: JobMiddleware[],
     handlerMiddlewares: JobMiddleware[],
   ) {
-    const logGlobalMiddlewareIds = this.middlewareExplorerService
-      .getMiddlewareIds(globalMiddlewares)
+    const logGlobalMiddlewareIds = globalMiddlewares
+      .map((middleware) => middleware.name)
       .join(', ');
-    const logHandlerMiddlewareIds = this.middlewareExplorerService
-      .getMiddlewareIds(handlerMiddlewares)
+    const logHandlerMiddlewareIds = handlerMiddlewares
+      .map((middleware) => middleware.name)
       .join(', ');
 
     const globalMiddlewareInfo =

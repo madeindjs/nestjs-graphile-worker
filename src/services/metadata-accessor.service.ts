@@ -2,7 +2,7 @@ import { Injectable, Type } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import {
   MIDDLEWARE_METADATA,
-  MiddlewareMetadata,
+  MiddlewareOptions,
   USE_MIDDLEWARE_METADATA,
   UseMiddlewaresMetadata,
 } from '../decorators/middleware.decorators';
@@ -64,8 +64,8 @@ export class MetadataAccessorService {
   }
 
   getMiddlewareMetadata(
-    target: Type | Function,
-  ): MiddlewareMetadata | undefined {
+    target: any,
+  ): MiddlewareOptions | undefined {
     return this.reflector.get(MIDDLEWARE_METADATA, target);
   }
 

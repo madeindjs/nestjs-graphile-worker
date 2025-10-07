@@ -11,7 +11,7 @@ import { MetadataAccessorService } from './metadata-accessor.service';
 import { MiddlewareExplorerService } from './middleware-explorer.service';
 
 @Injectable()
-@Middleware('firstGlobal', { global: true })
+@Middleware({ global: true })
 class TestFirstGlobalMiddleware implements MiddlewareProvider {
   async use(payload: any, _helpers: JobHelpers, next: Function) {
     payload.order = payload.order || [];
@@ -21,7 +21,7 @@ class TestFirstGlobalMiddleware implements MiddlewareProvider {
 }
 
 @Injectable()
-@Middleware('secondGlobal', { global: true })
+@Middleware({ global: true })
 class TestSecondGlobalMiddleware implements MiddlewareProvider {
   async use(payload: any, _helpers: JobHelpers, next: Function) {
     payload.order = payload.order || [];
@@ -31,7 +31,7 @@ class TestSecondGlobalMiddleware implements MiddlewareProvider {
 }
 
 @Injectable()
-@Middleware('firstNotGlobal')
+@Middleware()
 class TestFirstNotGlobalMiddleware implements MiddlewareProvider {
   async use(payload: any, _helpers: JobHelpers, next: Function) {
     payload.firstNotGlobal = true;
@@ -40,7 +40,7 @@ class TestFirstNotGlobalMiddleware implements MiddlewareProvider {
 }
 
 @Injectable()
-@Middleware('secondNotGlobal')
+@Middleware()
 class TestSecondNotGlobalMiddleware implements MiddlewareProvider {
   async use(payload: any, _helpers: JobHelpers, next: Function) {
     payload.secondNotGlobal = true;
@@ -49,7 +49,8 @@ class TestSecondNotGlobalMiddleware implements MiddlewareProvider {
 }
 
 @Injectable()
-@Middleware('invalidMiddleware', { global: true })
+@Injectable()
+@Middleware()
 class TestInvalidUseMethodMiddleware implements MiddlewareProvider {
   // Missing 'next' parameter - should cause runtime error at module init
   async use(payload: any, _helpers: JobHelpers) {
@@ -58,7 +59,7 @@ class TestInvalidUseMethodMiddleware implements MiddlewareProvider {
 }
 
 @Injectable()
-@Middleware('instanceFieldMiddleware')
+@Middleware()
 class TestInstanceFieldMiddleware implements MiddlewareProvider {
   private readonly instanceProperty = 'middleware-instance-value';
   public publicField = 'public-field-value';
@@ -107,22 +108,15 @@ describe('MiddlewareExplorerService', () => {
   });
 
   it('should register all middlewares and middlewares only', () => {
-    const registeredIds = service.registeredMiddlewareIds;
-
-    assert.strictEqual(registeredIds.length, 5);
-    assert.ok(registeredIds.includes('firstGlobal'));
-    assert.ok(registeredIds.includes('secondGlobal'));
-    assert.ok(registeredIds.includes('firstNotGlobal'));
-    assert.ok(registeredIds.includes('secondNotGlobal'));
-    assert.ok(registeredIds.includes('instanceFieldMiddleware'));
-  });
-
-  it('should get global middlewares', () => {
-    const globalMiddlewares = service.globalMiddlewares;
-
-    assert.strictEqual(globalMiddlewares.length, 2);
-    assert.strictEqual(globalMiddlewares[0].name, 'firstGlobal');
-    assert.strictEqual(globalMiddlewares[1].name, 'secondGlobal');
+    const allMiddlewares = service.getMiddlewaresByClasses([
+      TestFirstGlobalMiddleware,
+      TestSecondGlobalMiddleware,
+      TestFirstNotGlobalMiddleware,
+      TestSecondNotGlobalMiddleware,
+      TestInstanceFieldMiddleware,
+    ]);
+    assert.strictEqual(allMiddlewares.length, 5);
+    assert.strictEqual(service.globalMiddlewareClasses.length, 2);
   });
 
   describe('invalid middleware validation', () => {
@@ -152,61 +146,42 @@ describe('MiddlewareExplorerService', () => {
     });
   });
 
-  describe('middlewares by ID', () => {
-    it('should get middlewares by ID', () => {
-      const firstNotGlobalMiddleware =
-        service.getMiddlewareById('firstNotGlobal');
-      assert.ok(firstNotGlobalMiddleware);
-      assert.strictEqual(firstNotGlobalMiddleware.name, 'firstNotGlobal');
-    });
-
-    it('should return undefined for non-existent middleware', () => {
-      const nonExistent = service.getMiddlewareById('nonExistent');
-      assert.strictEqual(nonExistent, undefined);
-    });
-
-    it('should get multiple middlewares by IDs', () => {
-      const middlewares = service.getMiddlewaresByIds([
-        'firstNotGlobal',
-        'firstGlobal',
+  describe('middlewares by classes', () => {
+    it('should get multiple middlewares by classes', () => {
+      const middlewares = service.getMiddlewaresByClasses([
+        TestFirstNotGlobalMiddleware,
+        TestFirstGlobalMiddleware,
       ]);
       assert.strictEqual(middlewares.length, 2);
-      assert.strictEqual(middlewares[0].name, 'firstNotGlobal');
-      assert.strictEqual(middlewares[1].name, 'firstGlobal');
+      assert.strictEqual(middlewares[0].name, 'TestFirstNotGlobalMiddleware');
+      assert.strictEqual(middlewares[1].name, 'TestFirstGlobalMiddleware');
     });
 
     it('should throw error when getting non-existent middlewares', () => {
+      class NonExistentMiddleware {}
+
       assert.throws(
         () => {
-          service.getMiddlewaresByIds([
-            'firstNotGlobal',
-            'nonExistent',
-            'firstGlobal',
+          service.getMiddlewaresByClasses([
+            TestFirstNotGlobalMiddleware,
+            NonExistentMiddleware as any,
+            TestFirstGlobalMiddleware,
           ]);
         },
         {
           name: 'Error',
-          message: /Middleware\(s\) not found: \[nonExistent\]/,
+          message:
+            /Middleware class\(es\) not found: \[NonExistentMiddleware\]/,
         },
       );
     });
 
-    it('should get middleware IDs from middleware functions', () => {
-      const middlewares = service.getMiddlewaresByIds([
-        'firstNotGlobal',
-        'firstGlobal',
-      ]);
-      const ids = service.getMiddlewareIds(middlewares);
-
-      assert.strictEqual(ids.length, 2);
-      assert.strictEqual(ids[0], 'firstNotGlobal');
-      assert.strictEqual(ids[1], 'firstGlobal');
-    });
-
     it('should preserve instance context and access instance fields', async () => {
-      const middlewareFunction = service.getMiddlewareById(
-        'instanceFieldMiddleware',
-      );
+      const middlewares = service.getMiddlewaresByClasses([
+        TestInstanceFieldMiddleware,
+      ]);
+      assert.strictEqual(middlewares.length, 1);
+      const middlewareFunction = middlewares[0];
       assert.ok(middlewareFunction, 'Middleware function should be found');
 
       const payload: any = {};
@@ -215,7 +190,6 @@ describe('MiddlewareExplorerService', () => {
 
       const next = async (modifiedPayload: any) => {
         nextCalled = true;
-        // Verify that the middleware had access to its instance fields
         assert.strictEqual(
           modifiedPayload.instanceProperty,
           'middleware-instance-value',
@@ -226,50 +200,6 @@ describe('MiddlewareExplorerService', () => {
 
       await middlewareFunction(payload, helpers, next);
       assert.strictEqual(nextCalled, true);
-    });
-  });
-
-  describe('Middleware ID Uniqueness', () => {
-    @Injectable()
-    @Middleware('duplicateId')
-    class FirstDuplicateMiddleware implements MiddlewareProvider {
-      async use(payload: any, _helpers: JobHelpers, next: Function) {
-        await next(payload);
-      }
-    }
-
-    @Injectable()
-    @Middleware('duplicateId')
-    class SecondDuplicateMiddleware implements MiddlewareProvider {
-      async use(payload: any, _helpers: JobHelpers, next: Function) {
-        await next(payload);
-      }
-    }
-
-    it('should throw an error when duplicate middleware IDs are detected', async () => {
-      const module = await Test.createTestingModule({
-        imports: [DiscoveryModule],
-        providers: [
-          MiddlewareExplorerService,
-          MetadataAccessorService,
-          FirstDuplicateMiddleware,
-          SecondDuplicateMiddleware,
-        ],
-      }).compile();
-
-      module.useLogger({ error: mock.fn() } as any);
-
-      const service = module.get(MiddlewareExplorerService);
-
-      assert.throws(
-        () => {
-          service.onModuleInit();
-        },
-        {
-          name: 'Error',
-          message: 'Middleware SecondDuplicateMiddleware is not valid',
-        },
-      );
     });
   });
 });

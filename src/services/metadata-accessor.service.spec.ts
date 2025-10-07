@@ -35,18 +35,31 @@ class TestNotListenerService {
   onJobError() {}
 }
 
+class Global1 implements MiddlewareProvider {
+  async use() {}
+}
+class Global2 implements MiddlewareProvider {
+  async use() {}
+}
+class Local1 implements MiddlewareProvider {
+  async use() {}
+}
+class Local2 implements MiddlewareProvider {
+  async use() {}
+}
+
 @Injectable()
 @Task('test-task')
 class TestTaskService {
   @TaskHandler()
   handler() {}
 
-  @UseMiddlewares(['middleware1', 'middleware2'])
+  @UseMiddlewares([Local1, Local2])
   @TaskHandler()
   handlerWithMiddleware() {}
 
-  @UseMiddlewares(['local1'], {
-    bypassGlobalMiddlewares: ['global1', 'global2'],
+  @UseMiddlewares([Local1], {
+    bypassGlobalMiddlewares: [Global1, Global2],
   })
   @TaskHandler()
   handlerWithBypass() {}
@@ -55,24 +68,24 @@ class TestTaskService {
 }
 
 @Injectable()
-@Middleware('globalMiddleware', { global: true })
+@Middleware({ global: true })
 class TestGlobalMiddleware implements MiddlewareProvider {
   async use(
     payload: any,
     _helpers: JobHelpers,
-    next: (payload?: any) => Promise<void>,
+    next: (payload: any) => Promise<void>,
   ): Promise<void> {
     await next(payload);
   }
 }
 
 @Injectable()
-@Middleware('handlerMiddleware')
+@Middleware()
 class TestMiddleware implements MiddlewareProvider {
   async use(
     payload: any,
     _helpers: JobHelpers,
-    next: (payload?: any) => Promise<void>,
+    next: (payload: any) => Promise<void>,
   ): Promise<void> {
     await next(payload);
   }
@@ -223,7 +236,7 @@ describe(MetadataAccessorService.name, () => {
           testTask.handlerWithMiddleware,
         );
         assert.deepStrictEqual(metadata, {
-          middlewareIds: ['middleware1', 'middleware2'],
+          middlewareClasses: [Local1, Local2],
           options: undefined,
         });
       });
@@ -245,9 +258,9 @@ describe(MetadataAccessorService.name, () => {
           testTask.handlerWithBypass,
         );
         assert.deepStrictEqual(metadata, {
-          middlewareIds: ['local1'],
+          middlewareClasses: [Local1],
           options: {
-            bypassGlobalMiddlewares: ['global1', 'global2'],
+            bypassGlobalMiddlewares: [Global1, Global2],
           },
         });
       });
@@ -271,14 +284,13 @@ describe(MetadataAccessorService.name, () => {
       it('should get global middleware metadata', () => {
         const metadata = service.getMiddlewareMetadata(TestGlobalMiddleware);
         assert.deepStrictEqual(metadata, {
-          id: 'globalMiddleware',
           global: true,
         });
       });
 
       it('should get regular middleware metadata', () => {
         const metadata = service.getMiddlewareMetadata(TestMiddleware);
-        assert.deepStrictEqual(metadata, { id: 'handlerMiddleware' });
+        assert.deepStrictEqual(metadata, {});
       });
 
       it('should return undefined for non-middleware classes', () => {

@@ -245,15 +245,16 @@ In contrast, WorkerEvent listeners execute **as separate event handlers**, makin
 
 #### Usage
 
-To create a middleware, you should define a classe with the decorator `@Middleware('myUniqueMiddlewareId')`.
-For your middleware to automatically apply to all jobs, you can define it as a global middleware by using the
-`global: true` option (`@Middleware('myMiddlewareId', { global: true })`).
+To create a middleware, you should define a class with the decorator `@Middleware({ global: true })` for global 
+middlewares or `@Middleware()` for handler-specific middlewares. Global middlewares will automatically apply to all 
+your task handlers.
 
 For those middlewares that are not defined as global, you have to annotate the specific task handlers the middlewares
-should apply to, by using the decorator `@UseMiddlewares(['myLocalMiddleware'])`.
+should apply to, by using the decorator `@UseMiddlewares([MyLocalMiddleware])` (with the list of the class references 
+of the middlewares you want to apply).
 
 You can also bypass specific global middlewares for individual handlers using the `bypassGlobalMiddlewares` option:
-`@UseMiddlewares(['myLocalMiddleware'], { bypassGlobalMiddlewares: ['myGlobalMiddleware'] })`. This provides maximum
+`@UseMiddlewares([MyLocalMiddleware], { bypassGlobalMiddlewares: [MyGlobalMiddleware] })`. This provides maximum
 flexibility for controlling middleware execution on a per-handler basis if needed.
 
 Here is an example:
@@ -264,7 +265,7 @@ import { Middleware, MiddlewareProvider } from "nestjs-graphile-worker";
 import { JobHelpers } from "graphile-worker";
 
 @Injectable()
-@Middleware('myGlobalMiddleware', { global: true })
+@Middleware({ global: true })
 export class ContextMiddleware implements MiddlewareProvider {
   async use(payload: any, helpers: JobHelpers, next: (payload: any) => Promise<void>) {
     // Add job execution context that handlers can use
@@ -282,7 +283,7 @@ export class ContextMiddleware implements MiddlewareProvider {
 }
 
 @Injectable()
-@Middleware('myLocalMiddleware')
+@Middleware()
 export class GracefulLastAttemptFailureMiddleware implements MiddlewareProvider {
   async use(payload: any, helpers: JobHelpers, next: (payload: any) => Promise<void>) {
     try {
@@ -304,7 +305,7 @@ export class GracefulLastAttemptFailureMiddleware implements MiddlewareProvider 
 @Task('myTask')
 export class MyTask  {
 
-  @UseMiddlewares(['myLocalMiddleware'])
+  @UseMiddlewares([GracefulLastAttemptFailureMiddleware])
   @TaskHandler()
   async handler(payload: any, helpers: JobHelpers) {
     // do something
@@ -312,23 +313,23 @@ export class MyTask  {
 
   // Bypass specific global middlewares for this handler
   @UseMiddlewares(
-    ['myLocalMiddleware'], 
-    { bypassGlobalMiddlewares: ['myGlobalMiddleware'] }
+    [GracefulLastAttemptFailureMiddleware], 
+    { bypassGlobalMiddlewares: [ContextMiddleware] }
   )
   @TaskHandler()
   async handlerWithBypass(payload: any, helpers: JobHelpers) {
-    // This handler will skip 'myGlobalMiddleware' but still use 'myLocalMiddleware'
+    // This handler will skip 'ContextMiddleware' but still use 'GracefulLastAttemptFailureMiddleware'
   }
 
-  // Trick: bypass a global middleware but use it in the array of handler-specific middlewares to control execution order
+  // Trick: Bypass a global middleware but use it in the array of handler-specific middlewares to control execution order
   @UseMiddlewares(
-    ['myLocalMiddleware', 'myGlobalMiddleware'], 
-    { bypassGlobalMiddlewares: ['myGlobalMiddleware'] }
+    [GracefulLastAttemptFailureMiddleware, ContextMiddleware], 
+    { bypassGlobalMiddlewares: [ContextMiddleware] }
   )
   @TaskHandler()
   async handlerWithBypass(payload: any, helpers: JobHelpers) {
-    // Bypasses `myGlobalMiddleware` but includes it locally to control execution order: while global middlewares
-    // execute before local handlers, here `myGlobalMiddleware` gets executed as a local handler after `myLocalMiddleware`
+    // Bypass `myGlobalMiddleware` but include it locally to control execution order: while global middlewares execute
+    // before local handlers, here `myGlobalMiddleware` gets executed as a local handler after `myLocalMiddleware`
   }
 }
 
