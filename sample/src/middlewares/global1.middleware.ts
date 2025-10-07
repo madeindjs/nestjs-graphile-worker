@@ -6,11 +6,11 @@ import { Middleware, MiddlewareProvider } from '../../../src/index';
 @Middleware('global1', { global: true })
 export class Global1Middleware implements MiddlewareProvider {
   async use(
-    _payload: any,
+    payload: any,
     _helpers: JobHelpers,
-    next: (payload?: any) => Promise<void>,
+    next: (payload: any) => Promise<void>,
   ): Promise<void> {
     console.log('Global middleware 1 invoked');
-    await next();
+    await next(payload);
   }
 }

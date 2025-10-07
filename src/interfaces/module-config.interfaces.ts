@@ -10,7 +10,7 @@ export const RUNNER_OPTIONS_KEY = Symbol.for('RUNNER_OPTIONS_KEY');
 export type JobMiddleware = (
   payload: any,
   helpers: JobHelpers,
-  next: (payload?: any) => Promise<void>,
+  next: (payload: any) => Promise<void>,
 ) => Promise<void>;
 
 /**

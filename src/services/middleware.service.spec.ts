@@ -92,6 +92,37 @@ describe('MiddlewareService', () => {
       });
     });
 
+    it('should chain payload modifications between middlewares', async () => {
+      let receivedPayload: any;
+      const originalHandler = mock.fn((payload: any) => {
+        receivedPayload = payload;
+        return Promise.resolve();
+      });
+
+      const middleware1: JobMiddleware = async (payload, _helpers, next) => {
+        const modifiedPayload = { ...payload, step1: true };
+        await next(modifiedPayload);
+      };
+
+      const middleware2: JobMiddleware = async (payload, _helpers, next) => {
+        const modifiedPayload = { ...payload, step2: true };
+        await next(modifiedPayload);
+      };
+
+      const wrappedHandler = service.wrapTaskHandler(originalHandler, [
+        middleware1,
+        middleware2,
+      ]);
+      await wrappedHandler({ test: 'data' }, createMockHelpers());
+
+      assert.strictEqual(originalHandler.mock.callCount(), 1);
+      assert.deepStrictEqual(receivedPayload, {
+        test: 'data',
+        step1: true,
+        step2: true,
+      });
+    });
+
     it('should propagate errors from middleware', async () => {
       const originalHandler = mock.fn(() => Promise.resolve());
       const error = new Error('Middleware error');

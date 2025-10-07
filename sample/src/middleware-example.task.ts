@@ -9,8 +9,11 @@ export class MiddlewareExampleTask {
 
   @UseMiddlewares(['local1', 'local2'])
   @TaskHandler()
-  async handler(_payload: any, _helpers: JobHelpers) {
-    this.logger.log('Now processing the middleware-example task handler logic');
+  async handler(payload: any, _helpers: JobHelpers) {
+    this.logger.log(
+      'Now processing the middleware-example task handler logic, with payload:',
+      payload,
+    );
     await new Promise((resolve) => setTimeout(resolve, 100)); // Simulate some work
     this.logger.log('middleware-example  task now completed');
   }

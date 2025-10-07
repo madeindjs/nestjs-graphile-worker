@@ -6,11 +6,11 @@ import { Middleware, MiddlewareProvider } from '../../../src/index';
 @Middleware('local1')
 export class Local1Middleware implements MiddlewareProvider {
   async use(
-    _payload: any,
+    payload: any,
     _helpers: JobHelpers,
-    next: (payload?: any) => Promise<void>,
+    next: (payload: any) => Promise<void>,
   ): Promise<void> {
     console.log('Local middleware 1 invoked');
-    await next();
+    await next(payload);
   }
 }

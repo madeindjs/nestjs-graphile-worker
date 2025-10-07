@@ -28,20 +28,21 @@ export class MiddlewareService {
 
     return async (payload: any, helpers: JobHelpers) => {
       let currentIndex = 0;
+      let currentPayload = payload;
 
-      const next = async (modifiedPayload?: any): Promise<void> => {
-        const actualPayload = modifiedPayload ?? payload;
+      const next = async (modifiedPayload: any): Promise<void> => {
+        currentPayload = modifiedPayload;
 
         if (currentIndex >= middlewares.length) {
           // All middlewares have been executed, call the original handler
-          await originalHandler(actualPayload, helpers);
+          await originalHandler(currentPayload, helpers);
           return;
         }
 
         const middleware = middlewares[currentIndex++];
 
         try {
-          await middleware(actualPayload, helpers, next);
+          await middleware(currentPayload, helpers, next);
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : String(error);
@@ -52,7 +53,7 @@ export class MiddlewareService {
         }
       };
 
-      await next();
+      await next(currentPayload);
     };
   }
 }

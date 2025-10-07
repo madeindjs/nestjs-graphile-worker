@@ -266,7 +266,7 @@ import { JobHelpers } from "graphile-worker";
 @Injectable()
 @Middleware('myGlobalMiddleware', { global: true })
 export class ContextMiddleware implements MiddlewareProvider {
-  async use(payload: any, helpers: JobHelpers, next: Function) {
+  async use(payload: any, helpers: JobHelpers, next: (payload: any) => Promise<void>) {
     // Add job execution context that handlers can use
     const enrichedPayload = {
       ...payload,
@@ -284,7 +284,7 @@ export class ContextMiddleware implements MiddlewareProvider {
 @Injectable()
 @Middleware('myLocalMiddleware')
 export class GracefulLastAttemptFailureMiddleware implements MiddlewareProvider {
-  async use(payload: any, helpers: JobHelpers, next: Function) {
+  async use(payload: any, helpers: JobHelpers, next: (payload: any) => Promise<void>) {
     try {
       return await next(payload);
     } catch (error) {
@@ -376,9 +376,7 @@ provider in your module.
 
 2. **Tasks hanging**: Make sure every middleware calls `next()` or throws an error.
 
-3. **Payload not modified**: Ensure you're passing the modified payload to `next(modifiedPayload)`.
-
-4. **Performance issues**: Check for heavy operations in middleware that might slow down task execution.
+3. **Performance issues**: Check for heavy operations in middleware that might slow down task execution.
 
 ## Sample
 
