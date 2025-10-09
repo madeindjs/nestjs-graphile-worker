@@ -1,24 +1,29 @@
-import { DynamicModule, Module, Provider } from "@nestjs/common";
-import { DiscoveryModule } from "@nestjs/core";
-import { EventEmitter } from "node:events";
-import { RunnerOptions } from "graphile-worker";
+import { DynamicModule, Module, Provider } from '@nestjs/common';
+import { DiscoveryModule } from '@nestjs/core';
+import { RunnerOptions } from 'graphile-worker';
+import { EventEmitter } from 'node:events';
+
 import {
   GraphileWorkerAsyncConfiguration,
   GraphileWorkerConfiguration,
   RUNNER_OPTIONS_KEY,
-} from "./interfaces/module-config.interfaces";
-import { ListenerExplorerService } from "./services/listener-explorer.service";
-import { MetadataAccessorService } from "./services/metadata-accessor.service";
-import { TaskExplorerService } from "./services/task-explorer.service";
-import { WorkerService } from "./services/worker.service";
-import { RunnerLogger } from "./utils/graphile-worker-logger.utils";
+} from './interfaces/module-config.interfaces';
+import { ListenerExplorerService } from './services/listener-explorer.service';
+import { MetadataAccessorService } from './services/metadata-accessor.service';
+import { MiddlewareExplorerService } from './services/middleware-explorer.service';
+import { MiddlewareService } from './services/middleware.service';
+import { TaskExplorerService } from './services/task-explorer.service';
+import { WorkerService } from './services/worker.service';
+import { RunnerLogger } from './utils/graphile-worker-logger.utils';
 
-export const GRAPHILE_WORKER_TOKEN = Symbol.for("NestJsGraphileWorker");
+export const GRAPHILE_WORKER_TOKEN = Symbol.for('NestJsGraphileWorker');
 
 const internalsProviders = [
   MetadataAccessorService,
   ListenerExplorerService,
   TaskExplorerService,
+  MiddlewareExplorerService,
+  MiddlewareService,
   WorkerService,
 ];
 
@@ -89,10 +94,10 @@ export class GraphileWorkerModule {
   private static createAsyncSharedConfigurationProviders(
     options: GraphileWorkerAsyncConfiguration,
   ): Provider[] {
-    return [this.createAsyncSharedConfigurationProvider(options)];
+    return [this.createAsyncRunnerOptionsProvider(options)];
   }
 
-  private static createAsyncSharedConfigurationProvider(
+  private static createAsyncRunnerOptionsProvider(
     options: GraphileWorkerAsyncConfiguration,
   ): Provider {
     return {

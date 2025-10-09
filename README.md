@@ -19,6 +19,7 @@ Why you should prefer Graphile Worker instead of [Bull](https://github.com/nestj
 - provide a `WorkerService` to add jobs or start runner
 - provide a `@OnWorkerEvent` decorator to add custom behavior on `job:success` for example
 - provide a `@Task(name)` decorator to define your injectable tasks
+- provide middleware support to control job execution for cross-cutting concerns (e.g. context enrichment)
 
 ## Installation
 
@@ -116,7 +117,7 @@ To create task you need to define an `@Injectable` class with `@Task(name)` deco
 ```ts
 // src/hello.task.ts
 import { Injectable, Logger } from "@nestjs/common";
-import type { Helpers } from "graphile-worker";
+import type { JobHelpers } from "graphile-worker";
 import { Task, TaskHandler } from "../../src/index";
 
 @Injectable()
@@ -125,7 +126,7 @@ export class HelloTask {
   private logger = new Logger(HelloTask.name);
 
   @TaskHandler()
-  handler(payload: any, _helpers: Helpers) {
+  handler(payload: any, _helpers: JobHelpers) {
     this.logger.log(`handle ${JSON.stringify(payload)}`);
   }
 }
@@ -226,6 +227,157 @@ export class AppService {
   }
 }
 ```
+
+### Job middlewares
+
+Middlewares can help implement cross-cutting concerns like:
+
+- **Context enrichment** - Add fresh runtime data to the job payload, or use the job data to enrich some higher-level
+context context (e.g. include the jobId in a logger context)
+- **Error handling** - Add error handling applying to all jobs, e.g. to handle the last attempt failed gracefully as
+recommended in the [Graphile Worker documentation](https://worker.graphile.org/docs/scaling#keep-your-jobs-table-small)
+- **Conditional execution** - Skip or modify job execution based on runtime conditions
+- **Rate limiting and throttling** - Prevent job execution under certain conditions
+
+The advantage of middlewares is that they execute **as part of the job execution flow**, giving you full control over
+the job's context and execution.  
+In contrast, WorkerEvent listeners execute **as separate event handlers**, making them more suitable for side effects (like notifications or monitoring) but not for controlling or modifying job execution itself.
+
+#### Usage
+
+To create a middleware, you should define a class with the decorator `@Middleware({ global: true })` for global 
+middlewares or `@Middleware()` for handler-specific middlewares. Global middlewares will automatically apply to all 
+your task handlers.
+
+For those middlewares that are not defined as global, you have to annotate the specific task handlers the middlewares
+should apply to, by using the decorator `@UseMiddlewares([MyLocalMiddleware])` (with the list of the class references 
+of the middlewares you want to apply).
+
+You can also bypass specific global middlewares for individual handlers using the `bypassGlobalMiddlewares` option:
+`@UseMiddlewares([MyLocalMiddleware], { bypassGlobalMiddlewares: [MyGlobalMiddleware] })`. This provides maximum
+flexibility for controlling middleware execution on a per-handler basis if needed.
+
+Here is an example:
+
+```ts
+import { Injectable } from "@nestjs/common";
+import { Middleware, MiddlewareProvider } from "nestjs-graphile-worker";
+import { JobHelpers } from "graphile-worker";
+
+@Injectable()
+@Middleware({ global: true })
+export class ContextMiddleware implements MiddlewareProvider {
+  async use(payload: any, helpers: JobHelpers, next: (payload: any) => Promise<void>) {
+    // Add job execution context that handlers can use
+    const enrichedPayload = {
+      ...payload,
+      _jobContext: {
+        jobId: helpers.job.id,
+      }
+    };
+    
+    setLoggerContext({jobId: helpers.job.id}); // some logging util to set logging context
+
+    await next(enrichedPayload);
+  }
+}
+
+@Injectable()
+@Middleware()
+export class GracefulLastAttemptFailureMiddleware implements MiddlewareProvider {
+  async use(payload: any, helpers: JobHelpers, next: (payload: any) => Promise<void>) {
+    try {
+      return await next(payload);
+    } catch (error) {
+      const { job, logger } = helpers;
+
+      if (job.attempts < job.max_attempts) {
+        throw error; // Re-throw if not the last attempt
+      }
+      // Handle the last attempt error gracefully, and avoid a permafailed job being stored in the jobs table
+      logger.error(`Permanently failed to handle task ${job.task_identifier}`, { payload });
+      instrumentation.onJobFailedWithGracefulExit(job.task_identifier); // some instrumentation util for monitoring
+    }
+  }
+}
+
+@Injectable()
+@Task('myTask')
+export class MyTask  {
+
+  @UseMiddlewares([GracefulLastAttemptFailureMiddleware])
+  @TaskHandler()
+  async handler(payload: any, helpers: JobHelpers) {
+    // do something
+  }
+
+  // Bypass specific global middlewares for this handler
+  @UseMiddlewares(
+    [GracefulLastAttemptFailureMiddleware], 
+    { bypassGlobalMiddlewares: [ContextMiddleware] }
+  )
+  @TaskHandler()
+  async handlerWithBypass(payload: any, helpers: JobHelpers) {
+    // This handler will skip 'ContextMiddleware' but still use 'GracefulLastAttemptFailureMiddleware'
+  }
+
+  // Trick: Bypass a global middleware but use it in the array of handler-specific middlewares to control execution order
+  @UseMiddlewares(
+    [GracefulLastAttemptFailureMiddleware, ContextMiddleware], 
+    { bypassGlobalMiddlewares: [ContextMiddleware] }
+  )
+  @TaskHandler()
+  async handlerWithBypass(payload: any, helpers: JobHelpers) {
+    // Bypass `myGlobalMiddleware` but include it locally to control execution order: while global middlewares execute
+    // before local handlers, here `myGlobalMiddleware` gets executed as a local handler after `myLocalMiddleware`
+  }
+}
+
+@Module({
+  imports: [
+    GraphileWorkerModule.forRoot({
+      connectionString: "postgres://example:password@postgres/example",
+    }),
+  ],
+  providers: [
+    ContextMiddleware,
+    GracefulLastAttemptFailureMiddleware,
+    // ... other providers
+  ],
+  // ... other module config
+})
+export class AppModule {}
+```
+
+#### Middleware execution order
+
+Global middlewares are always executed first, then handler-specific middlewares.
+
+**Important**: Global middleware execution order is determined by the order in which they are declared in the `providers` 
+array. Middlewares execute in the same order they appear in the array.
+
+```ts
+@Module({
+  providers: [
+    FirstGlobalMiddleware,    // Executes first
+    SecondGlobalMiddleware,   // Executes second  
+    // ... other providers
+  ],
+})
+export class AppModule {}
+```
+
+#### Middleware troubleshooting: common issues
+
+> Take care of handling errors appropriately in your middleware.  
+> Also keep your middleware lightweight and avoid heavy computations.
+
+1. **Middleware not executing**: Ensure the middleware class is decorated with `@Middleware()` and registered as a
+provider in your module.
+
+2. **Tasks hanging**: Make sure every middleware calls `next()` or throws an error.
+
+3. **Performance issues**: Check for heavy operations in middleware that might slow down task execution.
 
 ## Sample
 

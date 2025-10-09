@@ -1,7 +1,17 @@
 import { FactoryProvider, ModuleMetadata } from '@nestjs/common';
-import { RunnerOptions } from 'graphile-worker';
+import { RunnerOptions, JobHelpers } from 'graphile-worker';
 
 export const RUNNER_OPTIONS_KEY = Symbol.for('RUNNER_OPTIONS_KEY');
+
+/**
+ * Job middleware function type.
+ * Middleware can modify payload, execute side effects, and control job execution.
+ */
+export type JobMiddleware = (
+  payload: any,
+  helpers: JobHelpers,
+  next: (payload: any) => Promise<void>,
+) => Promise<void>;
 
 /**
  * We use `events` internally for decorators.

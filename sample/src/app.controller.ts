@@ -22,4 +22,16 @@ export class AppController {
 
     return this.graphileWorker.addJobs(jobs);
   }
+
+  @Post('middleware-example')
+  @HttpCode(201)
+  async addMiddlewareExampleJob() {
+    await this.graphileWorker.addJob('middleware-example');
+  }
+
+  @Post('bypass-global-middleware')
+  @HttpCode(201)
+  async addBypassExampleJob() {
+    await this.graphileWorker.addJob('bypass-global-middleware');
+  }
 }

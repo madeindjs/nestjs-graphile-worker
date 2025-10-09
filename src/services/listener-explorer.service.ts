@@ -1,9 +1,9 @@
-import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
-import { DiscoveryService } from "@nestjs/core";
-import { InstanceWrapper } from "@nestjs/core/injector/instance-wrapper";
-import { MetadataScanner } from "@nestjs/core/metadata-scanner";
-import { WorkerEventName } from "../interfaces/worker.interfaces";
-import { MetadataAccessorService } from "./metadata-accessor.service";
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { DiscoveryService } from '@nestjs/core';
+import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
+import { MetadataScanner } from '@nestjs/core/metadata-scanner';
+import { WorkerEventName } from '../interfaces/worker.interfaces';
+import { MetadataAccessorService } from './metadata-accessor.service';
 
 /**
  * This service is responsible to scan all [Worker decorators](../decorators/worker.decorators.ts) and register them.
@@ -42,37 +42,38 @@ export class ListenerExplorerService implements OnModuleInit {
         this.metadataAccessor.isListener(wrapper.metatype),
       );
 
-    providers.forEach((wrapper: InstanceWrapper) => {
-      const { instance } = wrapper;
+    for (const provider of providers) {
+      const { instance } = provider;
 
-      this.metadataScanner.scanFromPrototype(
-        instance,
+      const methodNames = this.metadataScanner.getAllMethodNames(
         Object.getPrototypeOf(instance),
-        (key: string) => {
-          if (this.metadataAccessor.isWorkerEvent(instance[key])) {
-            const event = this.metadataAccessor.getListenerMetadata(
-              instance[key],
-            );
-
-            if (event === undefined) return;
-
-            this.listeners.push({
-              event,
-              callback: (...args: unknown[]) => instance[key](...args),
-            });
-
-            this.logger.debug(
-              `Register ${event} from ${
-                (instance as Object).constructor.name
-              }.${key}`,
-            );
-          }
-        },
       );
 
-      if (this.resolveInitialized instanceof Function) {
-        this.resolveInitialized();
+      for (const methodName of methodNames) {
+        if (!this.metadataAccessor.isWorkerEvent(instance[methodName])) {
+          continue;
+        }
+        const event = this.metadataAccessor.getListenerMetadata(
+          instance[methodName],
+        );
+
+        if (event === undefined) continue;
+
+        this.listeners.push({
+          event,
+          callback: (...args: unknown[]) => instance[methodName](...args),
+        });
+
+        this.logger.debug(
+          `Register ${event} from ${
+            (instance as Object).constructor.name
+          }.${methodName}`,
+        );
       }
-    });
+    }
+
+    if (this.resolveInitialized instanceof Function) {
+      this.resolveInitialized();
+    }
   }
 }
