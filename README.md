@@ -118,7 +118,7 @@ To create task you need to define an `@Injectable` class with `@Task(name)` deco
 // src/hello.task.ts
 import { Injectable, Logger } from "@nestjs/common";
 import type { JobHelpers } from "graphile-worker";
-import { Task, TaskHandler } from "../../src/index";
+import { Task, TaskHandler } from "nestjs-graphile-worker";
 
 @Injectable()
 @Task("hello")
@@ -209,7 +209,7 @@ You can use `@OnWorkerEvent` decorator to listen any [Graphile Worker event](htt
 ```ts
 import { Injectable, Logger } from "@nestjs/common";
 import { WorkerEventMap } from "graphile-worker";
-import { GraphileWorkerListener, OnWorkerEvent } from "../../src/index";
+import { GraphileWorkerListener, OnWorkerEvent } from "nestjs-graphile-worker";
 
 @Injectable()
 @GraphileWorkerListener()
